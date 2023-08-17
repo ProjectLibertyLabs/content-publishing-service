@@ -49,8 +49,6 @@ describe('ContentPublishingConfigService', () => {
     WEBHOOK_RETRY_INTERVAL_SECONDS: undefined,
     HEALTH_CHECK_MAX_RETRY_INTERVAL_SECONDS: undefined,
     HEALTH_CHECK_MAX_RETRIES: undefined,
-    GRAPH_ENVIRONMENT_TYPE: undefined,
-    GRAPH_ENVIRONMENT_DEV_CONFIG: undefined,
     CAPACITY_LIMIT: undefined,
   };
 
@@ -170,26 +168,6 @@ describe('ContentPublishingConfigService', () => {
       await expect(setupConfigService({ HEALTH_CHECK_MAX_RETRIES: 'foo', ...env })).rejects.toBeDefined();
     });
 
-    it('missing graph environment type should fail', async () => {
-      const { GRAPH_ENVIRONMENT_TYPE: dummy, ...env } = ALL_ENV;
-      await expect(setupConfigService({ GRAPH_ENVIRONMENT_TYPE: undefined, ...env })).rejects.toBeDefined();
-    });
-
-    it('invalid graph environment type should fail', async () => {
-      const { GRAPH_ENVIRONMENT_TYPE: dummy, ...env } = ALL_ENV;
-      await expect(setupConfigService({ GRAPH_ENVIRONMENT_TYPE: 'bad', ...env })).rejects.toBeDefined();
-    });
-
-    it('missing graph environment dev config should fail', async () => {
-      const { GRAPH_ENVIRONMENT_TYPE: dummy, GRAPH_ENVIRONMENT_DEV_CONFIG: dummy2, ...env } = ALL_ENV;
-      await expect(setupConfigService({ GRAPH_ENVIRONMENT_TYPE: 'Dev', GRAPH_ENVIRONMENT_DEV_CONFIG: undefined, ...env })).rejects.toBeDefined();
-    });
-
-    it('invalid graph environment dev config should fail', async () => {
-      const { GRAPH_ENVIRONMENT_TYPE: dummy, GRAPH_ENVIRONMENT_DEV_CONFIG: dummy2, ...env } = ALL_ENV;
-      await expect(setupConfigService({ GRAPH_ENVIRONMENT_TYPE: 'Dev', GRAPH_ENVIRONMENT_DEV_CONFIG: 'invalid json', ...env })).rejects.toBeDefined();
-    });
-
     it('missing capacity limits should fail', async () => {
       const { CAPACITY_LIMIT: dummy, ...env } = ALL_ENV;
       await expect(setupConfigService({ CAPACITY_LIMIT: undefined, ...env })).rejects.toBeDefined();
@@ -264,14 +242,6 @@ describe('ContentPublishingConfigService', () => {
 
     it('should get provider seed phrase', () => {
       expect(contentPublishingConfigService.getProviderAccountSeedPhrase()).toStrictEqual(ALL_ENV.PROVIDER_ACCOUNT_SEED_PHRASE);
-    });
-
-    it('should get graph environment type', () => {
-      expect(contentPublishingConfigService.getGraphEnvironmentType()).toStrictEqual(ALL_ENV.GRAPH_ENVIRONMENT_TYPE);
-    });
-
-    it('should get graph environment dev config', () => {
-      expect(contentPublishingConfigService.getGraphEnvironmentConfig()).toStrictEqual(ALL_ENV.GRAPH_ENVIRONMENT_DEV_CONFIG);
     });
 
     it('should get capacity limit', () => {

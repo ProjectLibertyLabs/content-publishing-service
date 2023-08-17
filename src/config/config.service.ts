@@ -20,8 +20,6 @@ export interface ConfigEnvironmentVariables {
   WEBHOOK_RETRY_INTERVAL_SECONDS: number;
   HEALTH_CHECK_MAX_RETRY_INTERVAL_SECONDS: number;
   HEALTH_CHECK_MAX_RETRIES: number;
-  GRAPH_ENVIRONMENT_TYPE: keyof EnvironmentType;
-  GRAPH_ENVIRONMENT_DEV_CONFIG: string;
   PROVIDER_ACCOUNT_SEED_PHRASE: string;
   CAPACITY_LIMIT: ICapacityLimit;
 }
@@ -85,14 +83,6 @@ export class ConfigService {
 
   public getProviderAccountSeedPhrase(): string {
     return this.nestConfigService.get<string>('PROVIDER_ACCOUNT_SEED_PHRASE')!;
-  }
-
-  public getGraphEnvironmentType(): keyof EnvironmentType {
-    return this.nestConfigService.get<keyof EnvironmentType>('GRAPH_ENVIRONMENT_TYPE')!;
-  }
-
-  public getGraphEnvironmentConfig(): string {
-    return this.nestConfigService.get<string>('GRAPH_ENVIRONMENT_DEV_CONFIG')!;
   }
 
   public getCapacityLimit(): ICapacityLimit {
