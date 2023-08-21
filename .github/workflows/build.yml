@@ -11,7 +11,7 @@ on:
       - main
 
 jobs:
-  build_next_js:
+  build_Nest_js:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
@@ -24,7 +24,7 @@ jobs:
           cache-dependency-path: package-lock.json
       - name: Install dependencies
         run: npm ci
-      - name: Build Next.js
+      - name: Build Nest.js
         run: npm run build
   test_jest:
     runs-on: ubuntu-latest
