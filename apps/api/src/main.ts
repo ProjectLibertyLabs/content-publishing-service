@@ -1,8 +1,8 @@
 import { NestFactory } from '@nestjs/core';
 import { Logger, ValidationPipe } from '@nestjs/common';
 import { EventEmitter2 } from '@nestjs/event-emitter';
-import { ContentPublishingServiceModule } from './content-publishing-service.module';
 import { initSwagger } from './config/swagger_config';
+import { ApiModule } from './api.module';
 
 const logger = new Logger('main');
 
@@ -11,7 +11,7 @@ const logger = new Logger('main');
 BigInt.prototype['toJSON'] = function () { return this.toString() };
 
 async function bootstrap() {
-  const app = await NestFactory.create(ContentPublishingServiceModule, {
+  const app = await NestFactory.create(ApiModule, {
     logger: process.env.DEBUG ? ['error', 'warn', 'log', 'verbose', 'debug'] : ['error', 'warn', 'log'],
   });
 

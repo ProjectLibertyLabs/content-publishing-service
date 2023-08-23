@@ -1,9 +1,9 @@
 import { Controller, Get, HttpStatus, Logger } from '@nestjs/common';
 import { ApiTags, ApiResponse, ApiOperation } from '@nestjs/swagger';
 
-@Controller('content-publishing-service')
-@ApiTags('content-publishing-service')
-export class ContentPublishingServiceController {
+@Controller('api')
+@ApiTags('api')
+export class ApiController {
   private readonly logger: Logger;
 
   constructor() {
