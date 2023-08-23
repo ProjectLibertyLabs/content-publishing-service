@@ -3,7 +3,7 @@ import { ApiTags } from '@nestjs/swagger';
 import { ApiResponse, ApiOperation } from '@nestjs/swagger';
 
 @Controller('content-publishing-service')
-@ApiTags('Content Publishing') // Add a tag for the controller
+@ApiTags('content-publishing-service')
 export class ContentPublishingServiceController {
   private readonly logger: Logger;
 
@@ -21,8 +21,8 @@ export class ContentPublishingServiceController {
 
   // eslint-disable-next-line class-methods-use-this
   @Get('swagger')
-  @ApiOperation({ summary: 'Get Swagger UI' }) // Add an operation description
-  @ApiResponse({ status: HttpStatus.OK, description: 'Swagger UI' }) // Add a response description
+  @ApiOperation({ summary: 'Swagger UI' })
+  @ApiResponse({ status: HttpStatus.OK, description: 'Endpoint to serve Swagger UI' })
   swagger() {
     return {
       status: HttpStatus.OK,
