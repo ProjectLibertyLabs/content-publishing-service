@@ -17,14 +17,4 @@ export class ApiController {
       status: HttpStatus.OK,
     };
   }
-
-  // eslint-disable-next-line class-methods-use-this
-  @Get('swagger')
-  @ApiOperation({ summary: 'Swagger UI' })
-  @ApiResponse({ status: HttpStatus.OK, description: 'Endpoint to serve Swagger UI' })
-  swagger() {
-    return {
-      status: HttpStatus.OK,
-    };
-  }
 }
