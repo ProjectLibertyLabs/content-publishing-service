@@ -1,6 +1,7 @@
 import { INestApplication } from '@nestjs/common';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 
+// TODO: Add more swagger options and document the API
 export const initSwagger = (app: INestApplication) => {
   const options = new DocumentBuilder()
     .setTitle('Content Publishing Service API')
@@ -15,5 +16,5 @@ export const initSwagger = (app: INestApplication) => {
   const document = SwaggerModule.createDocument(app, options, {
     extraModels: [],
   });
-  SwaggerModule.setup('nest/v1/docs', app, document);
+  SwaggerModule.setup('/docs/swagger', app, document);
 };
