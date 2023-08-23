@@ -1,6 +1,5 @@
 import { Controller, Get, HttpStatus, Logger } from '@nestjs/common';
-import { ApiTags } from '@nestjs/swagger'; 
-import { ApiResponse, ApiOperation } from '@nestjs/swagger';
+import { ApiTags, ApiResponse, ApiOperation } from '@nestjs/swagger';
 
 @Controller('content-publishing-service')
 @ApiTags('content-publishing-service')

@@ -2,6 +2,7 @@ import { NestFactory } from '@nestjs/core';
 import { Logger, ValidationPipe } from '@nestjs/common';
 import { EventEmitter2 } from '@nestjs/event-emitter';
 import { ContentPublishingServiceModule } from './content-publishing-service.module';
+import { initSwagger } from './config/swagger_config';
 
 const logger = new Logger('main');
 
@@ -24,6 +25,7 @@ async function bootstrap() {
   try {
     app.enableShutdownHooks();
     app.useGlobalPipes(new ValidationPipe());
+    initSwagger(app);
     await app.listen(3000);
   } catch (e) {
     await app.close();
