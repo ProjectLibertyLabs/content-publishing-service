@@ -1,8 +1,8 @@
 import { NestFactory } from '@nestjs/core';
 import { Logger, ValidationPipe } from '@nestjs/common';
 import { EventEmitter2 } from '@nestjs/event-emitter';
-import { initSwagger } from './config/swagger_config';
 import { ApiModule } from './api.module';
+import { initSwagger } from './config/swagger_config';
 
 const logger = new Logger('main');
 
