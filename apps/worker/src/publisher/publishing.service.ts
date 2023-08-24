@@ -1,6 +1,13 @@
+import { InjectRedis } from '@liaoliaots/nestjs-redis';
 import { Processor, WorkerHost, OnWorkerEvent } from '@nestjs/bullmq';
 import { Injectable, Logger, OnApplicationBootstrap, OnModuleDestroy } from '@nestjs/common';
 import { Job } from 'bullmq';
+import Redis from 'ioredis';
+import { BlockchainService } from '../../../api/src/blockchain/blockchain.service';
+import { ConfigService } from '../../../api/src/config/config.service';
+import { SchedulerRegistry } from '@nestjs/schedule';
+import { EventEmitter2 } from '@nestjs/event-emitter';
+import { IPublisherJob } from '../../../api/src/interfaces/publisher-job.interface';
 
 
 @Injectable()
@@ -9,14 +16,27 @@ import { Job } from 'bullmq';
 })
 export class PublishingService extends WorkerHost implements OnApplicationBootstrap, OnModuleDestroy {
   
+  private logger: Logger;
+
+  constructor(
+    @InjectRedis() private cacheManager: Redis,
+    private publishingService: PublishingService,
+    private blockchainService: BlockchainService,
+    private configService: ConfigService,
+    private schedulerRegistry: SchedulerRegistry,
+    private eventEmitter: EventEmitter2,
+  ) {
+    super();
+    this.logger = new Logger(this.constructor.name);
+  }
+  
   onApplicationBootstrap() {
     throw new Error('Method not implemented.');
   }
   onModuleDestroy() {
     throw new Error('Method not implemented.');
   }
-  private logger: Logger;  // eslint-disable-next-line class-methods-use-this
-  async process(job: Job): Promise<any> {
+  async process(job: Job<IPublisherJob, any, string>): Promise<any> {
     console.log(job.data);
   }
 

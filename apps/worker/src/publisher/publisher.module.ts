@@ -9,6 +9,7 @@ import { Module } from "@nestjs/common";
 import { ConfigModule } from "../../../api/src/config/config.module"
 import { ConfigService } from "../../../api/src/config/config.service"
 import { EventEmitterModule } from "@nestjs/event-emitter";
+import { BlockchainModule } from "../../../api/src/blockchain/blockchain.module";
 
 @Module({
   imports: [
@@ -48,9 +49,10 @@ import { EventEmitterModule } from "@nestjs/event-emitter";
       },
     }),
     ConfigModule,
+    BlockchainModule,
   ],
   controllers: [],
   providers: [PublishingService, PublishEventListener],
-  exports: [BullModule, PublishingService, PublishEventListener],
+  exports: [BullModule, BlockchainModule, PublishingService, PublishEventListener],
 })
 export class PublisherModule {}
