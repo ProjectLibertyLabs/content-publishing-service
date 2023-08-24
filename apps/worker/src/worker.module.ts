@@ -1,9 +1,8 @@
 import { Module } from '@nestjs/common';
 import { BullModule } from '@nestjs/bullmq';
 import { WorkerService } from './worker.service';
-import { ExampleConsumer } from './consumer';
-import { ExampleQueueEvents } from './event.listener';
-
+import { PublisherModule } from './publisher/publisher.module';
+import { PublishingService } from './publisher/publishing.service';
 @Module({
   imports: [
     BullModule.forRoot({
@@ -16,7 +15,8 @@ import { ExampleQueueEvents } from './event.listener';
     BullModule.registerQueue({
       name: 'testQueue',
     }),
+    PublisherModule,
   ],
-  providers: [WorkerService, ExampleConsumer, ExampleQueueEvents],
+  providers: [WorkerService, PublishingService],
 })
 export class WorkerModule {}
