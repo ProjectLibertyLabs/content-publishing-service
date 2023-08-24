@@ -7,7 +7,7 @@ import { BlockchainService } from '../../../api/src/blockchain/blockchain.servic
 import { ConfigService } from '../../../api/src/config/config.service';
 import { SchedulerRegistry } from '@nestjs/schedule';
 import { EventEmitter2 } from '@nestjs/event-emitter';
-import { IPublisherJob } from '../../../api/src/interfaces/publisher-job.interface';
+import { IPublisherJob } from '../interfaces/publisher-job.interface';
 
 
 @Injectable()
@@ -20,7 +20,6 @@ export class PublishingService extends WorkerHost implements OnApplicationBootst
 
   constructor(
     @InjectRedis() private cacheManager: Redis,
-    private publishingService: PublishingService,
     private blockchainService: BlockchainService,
     private configService: ConfigService,
     private schedulerRegistry: SchedulerRegistry,
@@ -37,7 +36,7 @@ export class PublishingService extends WorkerHost implements OnApplicationBootst
     throw new Error('Method not implemented.');
   }
   async process(job: Job<IPublisherJob, any, string>): Promise<any> {
-    console.log(job.data);
+    this.logger.log(`Processing job ${job.id} of type ${job.name}`);
   }
 
   // eslint-disable-next-line class-methods-use-this
