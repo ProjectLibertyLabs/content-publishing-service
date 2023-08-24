@@ -1,3 +1,6 @@
+/**
+ * File name should always end with `.dto.ts` for swagger metadata generator to get picked up
+ */
 // eslint-disable-next-line max-classes-per-file
 import { NoteActivityDto, ProfileActivityDto } from './activity.dto';
 
