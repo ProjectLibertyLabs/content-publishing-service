@@ -83,7 +83,9 @@ export class PublishingService extends WorkerHost implements OnApplicationBootst
 
         await this.cacheManager.setex(epochCapacityKey, epochDuration, newEpochCapacity.toString());
       } catch (error) {
-        console.error(`Error setting epoch capacity for epoch ${epoch}:`, error);
+        this.logger.error(`Error setting epoch capacity: ${error}`);
+
+        throw error;
       }
     });
   }
