@@ -14,14 +14,20 @@ export enum AnnouncementTypeDto {
   UPDATE = 'update',
 }
 
-export class BroadcastDto extends NoteActivityDto {}
-
-export class ReplyDto extends NoteActivityDto {
-  inReplyTo: string;
+export class BroadcastDto {
+  content: NoteActivityDto;
 }
 
-export class UpdateDto extends NoteActivityDto {
+export class ReplyDto {
+  inReplyTo: string;
+
+  content: NoteActivityDto;
+}
+
+export class UpdateDto {
   targetAnnouncementType: AnnouncementTypeDto;
+
+  content: NoteActivityDto;
 }
 
 export class ReactionDto {
@@ -32,4 +38,6 @@ export class ReactionDto {
   inReplyTo: string;
 }
 
-export class ProfileDto extends ProfileActivityDto {}
+export class ProfileDto {
+  profile: ProfileActivityDto;
+}

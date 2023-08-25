@@ -20,7 +20,7 @@ export class ApiController {
     };
   }
 
-  @Put('asset/:userDsnpId/upload')
+  @Put('asset/upload')
   @UseInterceptors(FilesInterceptor('files'))
   @HttpCode(202)
   @ApiConsumes('multipart/form-data')
@@ -29,10 +29,8 @@ export class ApiController {
     type: FilesUploadDto,
   })
   // eslint-disable-next-line no-undef
-  async assetUpload(@Param('userDsnpId') userDsnpId: string, @UploadedFiles() files: Array<Express.Multer.File>): Promise<UploadResponseDto> {
-    this.logger.log(`broadcast ${userDsnpId}`);
-    this.logger.log(files.length);
-    // this.logger.log(JSON.stringify(files));
+  async assetUpload(@UploadedFiles() files: Array<Express.Multer.File>): Promise<UploadResponseDto> {
+    this.logger.log(`upload ${files.length}`);
     return {
       assetIds: files.map((_) => uuidv4()),
     };
