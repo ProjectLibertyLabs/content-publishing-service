@@ -2,14 +2,14 @@
 https://docs.nestjs.com/modules
 */
 
-import { BullModule } from "@nestjs/bullmq";
-import { PublishingService } from "./publishing.service";
-import { PublishEventListener } from "./publish-event.listener";
-import { Module } from "@nestjs/common";
-import { ConfigModule } from "../../../api/src/config/config.module"
-import { ConfigService } from "../../../api/src/config/config.service"
-import { EventEmitterModule } from "@nestjs/event-emitter";
-import { BlockchainModule } from "../../../api/src/blockchain/blockchain.module";
+import { BullModule } from '@nestjs/bullmq';
+import { Module } from '@nestjs/common';
+import { EventEmitterModule } from '@nestjs/event-emitter';
+import { PublishingService } from './publishing.service';
+import { PublishEventListener } from './publish-event.listener';
+import { ConfigModule } from '../../../api/src/config/config.module';
+import { ConfigService } from '../../../api/src/config/config.service';
+import { BlockchainModule } from '../../../api/src/blockchain/blockchain.module';
 
 @Module({
   imports: [

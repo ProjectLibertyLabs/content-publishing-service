@@ -1,7 +1,7 @@
 import { QueueEventsListener, QueueEventsHost, OnQueueEvent } from '@nestjs/bullmq';
 
 @QueueEventsListener('publishQueue')
-export class PublishEventListener  extends QueueEventsHost {
+export class PublishEventListener extends QueueEventsHost {
   startTime: number;
 
   constructor() {
