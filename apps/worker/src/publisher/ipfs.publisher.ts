@@ -20,10 +20,30 @@ export class IPFSPublisher {
     return this.blockchainService.api.consts.frequencyTxPayment.maximumCapacityBatchLength.toNumber();
   }
 
-  public async publish(message: IPublisherJob): Promise<{ [key: string]: bigint }> {
+  public async publish(messages: IPublisherJob[]): Promise<{ [key: string]: bigint }> {
     const providerKeys = createKeys(this.configService.getProviderAccountSeedPhrase());
+
+    let batch: SubmittableExtrinsic<'rxjs', ISubmittableResult>[] = [];
     const batches: SubmittableExtrinsic<'rxjs', ISubmittableResult>[][] = [];
-    // TODO: Batchall
+    messages.forEach((message) => {
+      batch.push(
+        this.blockchainService.createExtrinsicCall(
+          { pallet: 'messages', extrinsic: 'addIpfsMessage' },
+          message.schemaId,
+          message.data.cid,
+          message.data.payloadLength,
+        ),
+      );      
+      
+      if (batch.length === this.capacityBatchLimit) {
+        batches.push(batch);
+        batch = [];
+      }
+    });
+
+    if (batch.length > 0) {
+      batches.push(batch);
+    }
     return this.sendAndProcessChainEvents(providerKeys, batches);
   }
 

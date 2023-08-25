@@ -50,7 +50,7 @@ export class PublishingService extends WorkerHost implements OnApplicationBootst
     this.logger.log(`Processing job ${job.id} of type ${job.name}`);
 
     try {
-      const totalCapacityUsed = await this.ipfsPublisher.publish(job.data);
+      const totalCapacityUsed = await this.ipfsPublisher.publish([job.data]);
       await this.setEpochCapacity(totalCapacityUsed);
 
       this.logger.verbose(`Successfully completed job ${job.id}`);
