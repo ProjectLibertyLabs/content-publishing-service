@@ -34,7 +34,7 @@ export class PublishingService extends WorkerHost implements OnApplicationBootst
   ) {
     super();
     this.logger = new Logger(this.constructor.name);
-    this.maxCapacityBatchSize = this.blockchainService.api.consts.frequencyTxPayment.maximumCapacityBatchLength.toNumber();
+    this.maxCapacityBatchSize = this.blockchainService.capacityBatchLimit;
   }
 
   public async onApplicationBootstrap() {

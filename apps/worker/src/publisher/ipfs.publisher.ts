@@ -16,10 +16,6 @@ export class IPFSPublisher {
     this.logger = new Logger(IPFSPublisher.name);
   }
 
-  public get capacityBatchLimit(): number {
-    return this.blockchainService.api.consts.frequencyTxPayment.maximumCapacityBatchLength.toNumber();
-  }
-
   public async publish(messages: IPublisherJob[]): Promise<{ [key: string]: bigint }> {
     const providerKeys = createKeys(this.configService.getProviderAccountSeedPhrase());
 
@@ -28,7 +24,7 @@ export class IPFSPublisher {
     messages.forEach((message) => {
       batch.push(this.blockchainService.createExtrinsicCall({ pallet: 'messages', extrinsic: 'addIpfsMessage' }, message.schemaId, message.data.cid, message.data.payloadLength));
 
-      if (batch.length === this.capacityBatchLimit) {
+      if (batch.length === this.blockchainService.capacityBatchLimit) {
         batches.push(batch);
         batch = [];
       }

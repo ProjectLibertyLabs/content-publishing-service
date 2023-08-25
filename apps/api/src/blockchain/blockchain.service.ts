@@ -135,4 +135,8 @@ export class BlockchainService implements OnApplicationBootstrap, OnApplicationS
     const epochLength: u32 = await this.query('capacity', 'epochLength');
     return typeof epochLength === 'number' ? epochLength : epochLength.toNumber();
   }
+
+  public get capacityBatchLimit(): number {
+    return this.api.consts.frequencyTxPayment.maximumCapacityBatchLength.toNumber();
+  }
 }
