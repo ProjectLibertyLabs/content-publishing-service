@@ -21,6 +21,8 @@ export class PublishingService extends WorkerHost implements OnApplicationBootst
 
   private capacityExhausted = false;
 
+  private maxCapacityBatchSize: number;
+
   constructor(
     @InjectRedis() private cacheManager: Redis,
     @InjectQueue('publishQueue') private publishQueue: Queue,
@@ -32,6 +34,7 @@ export class PublishingService extends WorkerHost implements OnApplicationBootst
   ) {
     super();
     this.logger = new Logger(this.constructor.name);
+    this.maxCapacityBatchSize = this.blockchainService.api.consts.frequencyTxPayment.maximumCapacityBatchLength.toNumber();
   }
 
   public async onApplicationBootstrap() {
@@ -48,8 +51,8 @@ export class PublishingService extends WorkerHost implements OnApplicationBootst
 
   async process(job: Job<IPublisherJob, any, string>): Promise<any> {
     this.logger.log(`Processing job ${job.id} of type ${job.name}`);
-
     try {
+      // TODO: this is only performing one message per batch, figure out how to batch multiple messages
       const totalCapacityUsed = await this.ipfsPublisher.publish([job.data]);
       await this.setEpochCapacity(totalCapacityUsed);
 
