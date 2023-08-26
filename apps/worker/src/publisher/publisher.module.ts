@@ -5,15 +5,29 @@ https://docs.nestjs.com/modules
 import { BullModule } from '@nestjs/bullmq';
 import { Module } from '@nestjs/common';
 import { EventEmitterModule } from '@nestjs/event-emitter';
+import { RedisModule } from '@liaoliaots/nestjs-redis';
 import { PublishingService } from './publishing.service';
 import { PublishEventListener } from './publish-event.listener';
 import { ConfigModule } from '../../../api/src/config/config.module';
 import { ConfigService } from '../../../api/src/config/config.service';
-import { BlockchainModule } from '../../../api/src/blockchain/blockchain.module';
+import { BlockchainModule } from '../blockchain/blockchain.module';
+import { IPFSPublisher } from './ipfs.publisher';
 
 @Module({
   imports: [
+    BlockchainModule,
+    ConfigModule,
     EventEmitterModule,
+    RedisModule.forRootAsync(
+      {
+        imports: [ConfigModule],
+        useFactory: (configService: ConfigService) => ({
+          config: [{ url: configService.redisUrl.toString() }],
+        }),
+        inject: [ConfigService],
+      },
+      true, // isGlobal
+    ),
     BullModule.forRootAsync({
       imports: [ConfigModule],
       useFactory: (configService: ConfigService) => {
@@ -48,11 +62,9 @@ import { BlockchainModule } from '../../../api/src/blockchain/blockchain.module'
         removeOnFail: true,
       },
     }),
-    ConfigModule,
-    BlockchainModule,
   ],
   controllers: [],
-  providers: [PublishingService, PublishEventListener],
-  exports: [BullModule, BlockchainModule, PublishingService, PublishEventListener],
+  providers: [PublishingService, PublishEventListener, IPFSPublisher],
+  exports: [BullModule, PublishingService, PublishEventListener, IPFSPublisher],
 })
 export class PublisherModule {}

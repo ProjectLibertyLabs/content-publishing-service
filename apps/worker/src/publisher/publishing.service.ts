@@ -6,7 +6,7 @@ import Redis from 'ioredis';
 import { SchedulerRegistry } from '@nestjs/schedule';
 import { EventEmitter2, OnEvent } from '@nestjs/event-emitter';
 import { MILLISECONDS_PER_SECOND } from 'time-constants';
-import { BlockchainService } from '../../../api/src/blockchain/blockchain.service';
+import { BlockchainService } from '../blockchain/blockchain.service';
 import { ConfigService } from '../../../api/src/config/config.service';
 import { IPublisherJob } from '../interfaces/publisher-job.interface';
 import { IPFSPublisher } from './ipfs.publisher';
@@ -21,8 +21,6 @@ export class PublishingService extends WorkerHost implements OnApplicationBootst
 
   private capacityExhausted = false;
 
-  private maxCapacityBatchSize: number;
-
   constructor(
     @InjectRedis() private cacheManager: Redis,
     @InjectQueue('publishQueue') private publishQueue: Queue,
@@ -34,7 +32,6 @@ export class PublishingService extends WorkerHost implements OnApplicationBootst
   ) {
     super();
     this.logger = new Logger(this.constructor.name);
-    this.maxCapacityBatchSize = this.blockchainService.capacityBatchLimit;
   }
 
   public async onApplicationBootstrap() {

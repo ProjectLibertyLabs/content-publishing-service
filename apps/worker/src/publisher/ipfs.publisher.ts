@@ -3,10 +3,10 @@ import { EventEmitter2 } from '@nestjs/event-emitter';
 import { KeyringPair } from '@polkadot/keyring/types';
 import { ISubmittableResult } from '@polkadot/types/types';
 import { SubmittableExtrinsic } from '@polkadot/api-base/types';
-import { BlockchainService } from '../../../api/src/blockchain/blockchain.service';
+import { BlockchainService } from '../blockchain/blockchain.service';
 import { ConfigService } from '../../../api/src/config/config.service';
 import { IPublisherJob } from '../interfaces/publisher-job.interface';
-import { createKeys } from '../../../api/src/blockchain/create-keys';
+import { createKeys } from '../blockchain/create-keys';
 
 @Injectable()
 export class IPFSPublisher {
@@ -21,10 +21,11 @@ export class IPFSPublisher {
 
     let batch: SubmittableExtrinsic<'rxjs', ISubmittableResult>[] = [];
     const batches: SubmittableExtrinsic<'rxjs', ISubmittableResult>[][] = [];
+    const allowedBatchLen = await this.blockchainService.capacityBatchLimit();
     messages.forEach((message) => {
       batch.push(this.blockchainService.createExtrinsicCall({ pallet: 'messages', extrinsic: 'addIpfsMessage' }, message.schemaId, message.data.cid, message.data.payloadLength));
 
-      if (batch.length === this.blockchainService.capacityBatchLimit) {
+      if (batch.length === allowedBatchLen) {
         batches.push(batch);
         batch = [];
       }
