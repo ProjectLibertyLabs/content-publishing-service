@@ -9,7 +9,6 @@ import { WorkerService } from './worker.service';
 import { ConfigService } from '../../api/src/config/config.service';
 import { BlockchainModule } from './blockchain/blockchain.module';
 import { ConfigModule } from '../../api/src/config/config.module';
-import { BlockchainService } from './blockchain/blockchain.service';
 
 @Module({
   imports: [
@@ -47,6 +46,6 @@ import { BlockchainService } from './blockchain/blockchain.service';
     PublisherModule,
     BlockchainModule,
   ],
-  providers: [ConfigService, WorkerService, PublishingService, BlockchainService],
+  providers: [ConfigService, WorkerService, PublishingService],
 })
 export class WorkerModule {}
