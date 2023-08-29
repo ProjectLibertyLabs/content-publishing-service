@@ -58,7 +58,7 @@ import { IPFSPublisher } from './ipfs.publisher';
           type: 'exponential',
         },
         removeOnComplete: true,
-        removeOnFail: true,
+        removeOnFail: false,
       },
     }),
   ],
