@@ -8,7 +8,11 @@ import { IBatchAnnouncerJobData } from '../interfaces/batch-announcer.job.interf
 export class IPFSAnnouncer {
   private logger: Logger;
 
-  constructor(private configService: ConfigService, private blockchainService: BlockchainService, private eventEmitter: EventEmitter2) {
+  constructor(
+    private configService: ConfigService,
+    private blockchainService: BlockchainService,
+    private eventEmitter: EventEmitter2,
+  ) {
     this.logger = new Logger(IPFSAnnouncer.name);
   }
 
