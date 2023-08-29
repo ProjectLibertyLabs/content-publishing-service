@@ -7,7 +7,6 @@ import { Module } from '@nestjs/common';
 import { EventEmitterModule } from '@nestjs/event-emitter';
 import { RedisModule } from '@liaoliaots/nestjs-redis';
 import { PublishingService } from './publishing.service';
-import { PublishEventListener } from './publish-event.listener';
 import { ConfigModule } from '../../../api/src/config/config.module';
 import { ConfigService } from '../../../api/src/config/config.service';
 import { BlockchainModule } from '../blockchain/blockchain.module';
@@ -64,7 +63,7 @@ import { IPFSPublisher } from './ipfs.publisher';
     }),
   ],
   controllers: [],
-  providers: [PublishingService, PublishEventListener, IPFSPublisher],
-  exports: [BullModule, PublishingService, PublishEventListener, IPFSPublisher],
+  providers: [PublishingService, IPFSPublisher],
+  exports: [BullModule, PublishingService, IPFSPublisher],
 })
 export class PublisherModule {}

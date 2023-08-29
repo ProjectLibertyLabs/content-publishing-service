@@ -131,7 +131,6 @@ export class PublishingService extends WorkerHost implements OnApplicationBootst
     Capacity limit: ${JSON.stringify(capacityLimit)}
     Remaining Capacity: ${JSON.stringify(capacity.remainingCapacity.toString())})}`);
 
-    await this.publishQueue.pause();
     const blocksRemaining = capacity.nextEpochStart - capacity.currentBlockNumber;
     try {
       this.schedulerRegistry.addTimeout(
