@@ -1,4 +1,4 @@
-import { Body, Controller, Delete, Get, HttpCode, HttpStatus, Logger, Param, ParseFilePipeBuilder, Post, Put, UploadedFile, UploadedFiles, UseInterceptors } from '@nestjs/common';
+import { Body, Controller, Delete, Get, HttpCode, HttpStatus, Logger, Param, ParseFilePipeBuilder, Post, Put, UploadedFiles, UseInterceptors } from '@nestjs/common';
 import { v4 as uuidv4 } from 'uuid';
 import { FilesInterceptor } from '@nestjs/platform-express';
 import { ApiBody, ApiConsumes } from '@nestjs/swagger';
@@ -101,7 +101,7 @@ export class ApiController {
 
   @Delete('content/:userDsnpId/:targetContentHash')
   @HttpCode(202)
-  async delete(@Param('userDsnpId') userDsnpId: DsnpUserIdParam, @Param('targetContentHash') targetContentHash: string): Promise<AnnouncementResponseDto> {
+  async delete(@Param() userDsnpId: DsnpUserIdParam, @Param() targetContentHash: DsnpContentHashParam): Promise<AnnouncementResponseDto> {
     this.logger.log(`delete ${userDsnpId}/${targetContentHash}`);
     return {
       referenceId: uuidv4(),

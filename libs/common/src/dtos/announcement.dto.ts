@@ -2,7 +2,7 @@
  * File name should always end with `.dto.ts` for swagger metadata generator to get picked up
  */
 // eslint-disable-next-line max-classes-per-file
-import { IsEnum, IsInt, IsString, Matches, Max, MaxLength, Min, MinLength, ValidateNested } from 'class-validator';
+import { IsEnum, IsInt, IsNotEmpty, IsString, Matches, Max, MaxLength, Min, MinLength, ValidateNested } from 'class-validator';
 import { Type } from 'class-transformer';
 import { NoteActivityDto, ProfileActivityDto } from './activity.dto';
 import { DSNP_CONTENT_URI_REGEX, DSNP_EMOJI_REGEX } from '../constants';
@@ -14,6 +14,7 @@ export enum AnnouncementTypeDto {
 }
 
 export class BroadcastDto {
+  @IsNotEmpty()
   @ValidateNested()
   @Type(() => NoteActivityDto)
   content: NoteActivityDto;
@@ -24,6 +25,7 @@ export class ReplyDto {
   @Matches(DSNP_CONTENT_URI_REGEX)
   inReplyTo: string;
 
+  @IsNotEmpty()
   @ValidateNested()
   @Type(() => NoteActivityDto)
   content: NoteActivityDto;
@@ -33,6 +35,7 @@ export class UpdateDto {
   @IsEnum(AnnouncementTypeDto)
   targetAnnouncementType: AnnouncementTypeDto;
 
+  @IsNotEmpty()
   @ValidateNested()
   @Type(() => NoteActivityDto)
   content: NoteActivityDto;
@@ -55,6 +58,7 @@ export class ReactionDto {
 }
 
 export class ProfileDto {
+  @IsNotEmpty()
   @ValidateNested()
   @Type(() => ProfileActivityDto)
   profile: ProfileActivityDto;
