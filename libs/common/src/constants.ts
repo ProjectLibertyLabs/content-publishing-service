@@ -30,3 +30,5 @@ export const DURATION_REGEX = /^-?P(([0-9]+Y)?([0-9]+M)?([0-9]+D)?(T([0-9]+H)?([
  */
 export const DSNP_VALID_MIME_TYPES =
   /(image\/jpeg|image\/png|image\/svg\+xml|image\/webp|image\/gif|video\/mpeg|video\/ogg|video\/webm|video\/H256|video\/mp4|audio\/mpeg|audio\/ogg|audio\/webm)$/;
+export const SECONDS_PER_BLOCK = 12;
+export const CAPACITY_EPOCH_TIMEOUT_NAME = 'capacity-epoch-timeout';
