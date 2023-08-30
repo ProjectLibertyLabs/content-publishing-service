@@ -1,5 +1,7 @@
+import { Hash } from "@polkadot/types/interfaces";
+
 export interface IStatusMonitorJob {
   id: string;
-  txHash: string;
+  txHash: Hash;
   publisherJobId: string;
 }
