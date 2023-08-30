@@ -40,6 +40,10 @@ export class IPFSPublisher {
       const [txHash, eventMap] = await this.blockchainService
         .createExtrinsic({ pallet: 'frequencyTxPayment', extrinsic: 'payWithCapacity' }, { eventPallet: 'messages', event: 'MessagesStored' }, providerKeys, [tx])
         .signAndSend();
+      if (!txHash) {
+        throw new Error('Tx hash is undefined');
+      }
+
       const capacityWithDrawn = BigInt(eventMap['capacity.CapacityWithdrawn'].data[1].toString());
 
       this.sendJobToTxReceiptQueue(jobId, txHash);
