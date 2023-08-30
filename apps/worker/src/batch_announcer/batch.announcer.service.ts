@@ -12,7 +12,7 @@ import { IBatchAnnouncerJobData } from '../interfaces/batch-announcer.job.interf
 import { QueueConstants } from '../../../../libs/common/src';
 
 @Injectable()
-@Processor('batchAnnouncerQueue', {
+@Processor(QueueConstants.BATCH_QUEUE_NAME, {
   concurrency: 2,
 })
 export class BatchAnnouncementService extends WorkerHost implements OnApplicationBootstrap, OnModuleDestroy {
