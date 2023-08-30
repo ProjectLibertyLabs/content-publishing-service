@@ -18,7 +18,7 @@ export class StatusMonitoringService extends WorkerHost implements OnApplication
 
   constructor(
     @InjectRedis() private cacheManager: Redis,
-    @InjectQueue('publishQueue') private publishQueue: Queue,
+    @InjectQueue(QueueConstants.PUBLISH_QUEUE_NAME) private publishQueue: Queue,
     private blockchainService: BlockchainService,
     private configService: ConfigService,
     private eventEmitter: EventEmitter2,
