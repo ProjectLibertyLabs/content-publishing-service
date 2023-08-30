@@ -11,6 +11,8 @@ import { BlockchainModule } from './blockchain/blockchain.module';
 import { ConfigModule } from '../../api/src/config/config.module';
 import { BatchAnnouncementService } from './batch_announcer/batch.announcer.service';
 import { BatchAnnouncerModule } from './batch_announcer/batch.announcer.module';
+import { StatusMonitorModule } from './monitor/status.monitor.module';
+import { StatusMonitoringService } from './monitor/status.monitor.service';
 
 @Module({
   imports: [
@@ -48,7 +50,8 @@ import { BatchAnnouncerModule } from './batch_announcer/batch.announcer.module';
     PublisherModule,
     BlockchainModule,
     BatchAnnouncerModule,
+    StatusMonitorModule,
   ],
-  providers: [BatchAnnouncementService, ConfigService, WorkerService, PublishingService],
+  providers: [BatchAnnouncementService, ConfigService, WorkerService, PublishingService, StatusMonitoringService],
 })
 export class WorkerModule {}
