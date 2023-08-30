@@ -51,17 +51,30 @@ import { QueueConstants } from '../../../../libs/common/src';
       },
       inject: [ConfigService],
     }),
-    BullModule.registerQueue({
-      name: QueueConstants.PUBLISH_QUEUE_NAME,
-      defaultJobOptions: {
-        attempts: 1,
-        backoff: {
-          type: 'exponential',
+    BullModule.registerQueue(
+      {
+        name: QueueConstants.PUBLISH_QUEUE_NAME,
+        defaultJobOptions: {
+          attempts: 1,
+          backoff: {
+            type: 'exponential',
+          },
+          removeOnComplete: false,
+          removeOnFail: false,
         },
-        removeOnComplete: false,
-        removeOnFail: false,
       },
-    }),
+      {
+        name: QueueConstants.TRANSACTION_RECEIPT_QUEUE_NAME,
+        defaultJobOptions: {
+          attempts: 1,
+          backoff: {
+            type: 'exponential',
+          },
+          removeOnComplete: false,
+          removeOnFail: false,
+        },
+      },
+    ),
   ],
   controllers: [],
   providers: [PublishingService, IPFSPublisher],
