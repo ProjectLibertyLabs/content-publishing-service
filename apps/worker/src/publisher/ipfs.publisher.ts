@@ -32,12 +32,12 @@ export class IPFSPublisher {
     return this.processSingleBatch(message.id, providerKeys, tx);
   }
 
-  async processSingleBatch(jobId: string, providerKeys: KeyringPair, batch: SubmittableExtrinsic<'rxjs', ISubmittableResult>): Promise<{ [key: string]: bigint }> {
-    this.logger.debug(`Submitting batch of size ${batch.length}`);
+  async processSingleBatch(jobId: string, providerKeys: KeyringPair, tx: SubmittableExtrinsic<'rxjs', ISubmittableResult>): Promise<{ [key: string]: bigint }> {
+    this.logger.debug(`Submitting tx of size ${tx.length}`);
     try {
       const currrentEpoch = await this.blockchainService.getCurrentCapacityEpoch();
       const [txHash, eventMap] = await this.blockchainService
-        .createExtrinsic({ pallet: 'frequencyTxPayment', extrinsic: 'payWithCapacityBatchAll' }, { eventPallet: 'utility', event: 'BatchCompleted' }, providerKeys, batch)
+        .createExtrinsic({ pallet: 'frequencyTxPayment', extrinsic: 'payWithCapacity' }, { eventPallet: 'messages', event: 'MessagesStored' }, providerKeys, [tx])
         .signAndSend();
       const capacityWithDrawn = BigInt(eventMap['capacity.CapacityWithdrawn'].data[1].toString());
 
