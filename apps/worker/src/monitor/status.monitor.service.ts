@@ -6,7 +6,6 @@ import Redis from 'ioredis';
 import { EventEmitter2 } from '@nestjs/event-emitter';
 import { BlockchainService } from '../blockchain/blockchain.service';
 import { ConfigService } from '../../../api/src/config/config.service';
-import { CAPACITY_EPOCH_TIMEOUT_NAME } from '../../../../libs/common/src/constants';
 import { IStatusMonitorJob } from '../interfaces/status-monitor.interface';
 
 @Injectable()
@@ -46,10 +45,6 @@ export class StatusMonitoringService extends WorkerHost implements OnApplication
       return { success: true };
     } catch (e) {
       this.logger.error(`Job ${job.id} failed (attempts=${job.attemptsMade})`);
-      if (e instanceof Error && e.message.includes('Inability to pay some fees')) {
-        this.eventEmitter.emit('capacity.exhausted');
-        // TODO: revisit this logic
-      }
       throw e;
     } finally {
       // do some stuff
