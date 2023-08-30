@@ -9,6 +9,7 @@ import { ConfigService } from '../../../api/src/config/config.service';
 import { IPFSAnnouncer } from './ipfs.announcer';
 import { CAPACITY_EPOCH_TIMEOUT_NAME } from '../../../../libs/common/src/constants';
 import { IBatchAnnouncerJobData } from '../interfaces/batch-announcer.job.interface';
+import { QueueConstants } from '../../../../libs/common/src';
 
 @Injectable()
 @Processor('batchAnnouncerQueue', {
@@ -21,7 +22,7 @@ export class BatchAnnouncementService extends WorkerHost implements OnApplicatio
 
   constructor(
     @InjectRedis() private cacheManager: Redis,
-    @InjectQueue('publishQueue') private publishQueue: Queue,
+    @InjectQueue(QueueConstants.PUBLISH_QUEUE_NAME) private publishQueue: Queue,
     private configService: ConfigService,
     private ipfsPublisher: IPFSAnnouncer,
     private schedulerRegistry: SchedulerRegistry,

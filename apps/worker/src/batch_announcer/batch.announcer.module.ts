@@ -10,6 +10,7 @@ import { BatchAnnouncementService } from './batch.announcer.service';
 import { ConfigModule } from '../../../api/src/config/config.module';
 import { ConfigService } from '../../../api/src/config/config.service';
 import { IPFSAnnouncer } from './ipfs.announcer';
+import { QueueConstants } from '../../../../libs/common/src';
 
 @Module({
   imports: [
@@ -50,7 +51,7 @@ import { IPFSAnnouncer } from './ipfs.announcer';
     }),
     BullModule.registerQueue(
       {
-        name: 'publishQueue',
+        name: QueueConstants.PUBLISH_QUEUE_NAME,
         defaultJobOptions: {
           attempts: 1,
           backoff: {
@@ -61,7 +62,7 @@ import { IPFSAnnouncer } from './ipfs.announcer';
         },
       },
       {
-        name: 'batchAnnouncerQueue',
+        name: QueueConstants.BATCH_QUEUE_NAME,
         defaultJobOptions: {
           attempts: 1,
           backoff: {
