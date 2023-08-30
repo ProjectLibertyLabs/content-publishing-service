@@ -58,7 +58,7 @@ import { QueueConstants } from '../../../../libs/common/src';
         backoff: {
           type: 'exponential',
         },
-        removeOnComplete: true,
+        removeOnComplete: false,
         removeOnFail: false,
       },
     }),

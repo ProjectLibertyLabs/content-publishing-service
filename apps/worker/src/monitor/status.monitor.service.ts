@@ -7,9 +7,10 @@ import { EventEmitter2 } from '@nestjs/event-emitter';
 import { BlockchainService } from '../blockchain/blockchain.service';
 import { ConfigService } from '../../../api/src/config/config.service';
 import { IStatusMonitorJob } from '../interfaces/status-monitor.interface';
+import { QueueConstants } from '../../../../libs/common/src';
 
 @Injectable()
-@Processor('txReceiptQueue', {
+@Processor(QueueConstants.TRANSACTION_RECEIPT_QUEUE_NAME, {
   concurrency: 2,
 })
 export class StatusMonitoringService extends WorkerHost implements OnApplicationBootstrap, OnModuleDestroy {

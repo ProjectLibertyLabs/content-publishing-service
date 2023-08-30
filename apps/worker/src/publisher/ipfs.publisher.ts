@@ -10,13 +10,14 @@ import { ConfigService } from '../../../api/src/config/config.service';
 import { IPublisherJob } from '../interfaces/publisher-job.interface';
 import { createKeys } from '../blockchain/create-keys';
 import { IStatusMonitorJob } from '../interfaces/status-monitor.interface';
+import { QueueConstants } from '../../../../libs/common/src';
 
 @Injectable()
 export class IPFSPublisher {
   private logger: Logger;
 
   constructor(
-    @InjectQueue('txReceiptQueue') private txReceiptQueue,
+    @InjectQueue(QueueConstants.TRANSACTION_RECEIPT_QUEUE_NAME) private txReceiptQueue,
     private configService: ConfigService,
     private blockchainService: BlockchainService,
     private eventEmitter: EventEmitter2,

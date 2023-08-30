@@ -10,6 +10,7 @@ import { StatusMonitoringService } from './status.monitor.service';
 import { ConfigModule } from '../../../api/src/config/config.module';
 import { ConfigService } from '../../../api/src/config/config.service';
 import { BlockchainModule } from '../blockchain/blockchain.module';
+import { QueueConstants } from '../../../../libs/common/src';
 
 @Module({
   imports: [
@@ -50,7 +51,7 @@ import { BlockchainModule } from '../blockchain/blockchain.module';
       inject: [ConfigService],
     }),
     BullModule.registerQueue({
-      name: 'txReceiptQueue',
+      name: QueueConstants.TRANSACTION_RECEIPT_QUEUE_NAME,
       defaultJobOptions: {
         attempts: 1,
         backoff: {
