@@ -1,9 +1,11 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { EventEmitter2 } from '@nestjs/event-emitter';
+import parquetjs, { ParquetWriter } from '@dsnp/parquetjs';
+import parquet from '@dsnp/frequency-schemas';
 import { BlockchainService } from '../blockchain/blockchain.service';
 import { ConfigService } from '../../../api/src/config/config.service';
 import { IBatchAnnouncerJobData } from '../interfaces/batch-announcer.job.interface';
-import parquetjs from "@dsnp/parquetjs"
+
 @Injectable()
 export class IPFSAnnouncer {
   private logger: Logger;
@@ -21,9 +23,15 @@ export class IPFSAnnouncer {
     const { batchId, schemaId, announcements } = batchJob;
 
     // Create a parquet file
-    const schema = await this.blockchainService.getSchema(schemaId);
-    this.logger.debug(`Schema: ${JSON.stringify(schema)}`);
+    const frequencySchema = await this.blockchainService.getSchema(schemaId);
+    const schema = JSON.parse(frequencySchema.model.toRawType());
+    if (!schema) {
+      throw new Error(`Unable to parse schema for schemaId ${schemaId}`);
+    }
 
-    
+    const [parquetSchema, writerOptions] = parquet.parquet.fromFrequencySchema(schema);
+    const writer = await ParquetWriter.openFile(parquetSchema, `./${batchId}.parquet`, writerOptions);
+
+    // Write the data to the parquet file
   }
 }
