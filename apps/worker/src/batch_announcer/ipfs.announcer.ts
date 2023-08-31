@@ -3,7 +3,7 @@ import { EventEmitter2 } from '@nestjs/event-emitter';
 import { BlockchainService } from '../blockchain/blockchain.service';
 import { ConfigService } from '../../../api/src/config/config.service';
 import { IBatchAnnouncerJobData } from '../interfaces/batch-announcer.job.interface';
-
+import parquetjs from "@dsnp/parquetjs"
 @Injectable()
 export class IPFSAnnouncer {
   private logger: Logger;
@@ -17,6 +17,13 @@ export class IPFSAnnouncer {
   }
 
   public async announce(batchJob: IBatchAnnouncerJobData): Promise<void> {
-    this.logger.log(`Announcing batch ${batchJob.batchId} on IPFS`);
+    this.logger.debug(`Announcing batch ${batchJob.batchId} on IPFS`);
+    const { batchId, schemaId, announcements } = batchJob;
+
+    // Create a parquet file
+    const schema = await this.blockchainService.getSchema(schemaId);
+    this.logger.debug(`Schema: ${JSON.stringify(schema)}`);
+
+    
   }
 }
