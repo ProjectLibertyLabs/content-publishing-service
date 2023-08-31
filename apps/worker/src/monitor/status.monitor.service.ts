@@ -42,6 +42,8 @@ export class StatusMonitoringService extends WorkerHost implements OnApplication
   async process(job: Job<IStatusMonitorJob, any, string>): Promise<any> {
     this.logger.log(`Processing job ${job.id} of type ${job.name}`);
     try {
+      this.logger.debug(`Checking status of tx ${job.data.txHash}`);
+
       this.logger.verbose(`Successfully completed job ${job.id}`);
       return { success: true };
     } catch (e) {

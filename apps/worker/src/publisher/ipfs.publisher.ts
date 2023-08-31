@@ -55,7 +55,6 @@ export class IPFSPublisher {
 
   async sendJobToTxReceiptQueue(jobId: any, txHash: Hash): Promise<void> {
     const job: IStatusMonitorJob = {
-      id: txHash.toString(),
       txHash,
       publisherJobId: jobId,
     };
