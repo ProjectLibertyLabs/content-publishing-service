@@ -50,8 +50,7 @@ export class PublishingService extends WorkerHost implements OnApplicationBootst
   async process(job: Job<IPublisherJob, any, string>): Promise<any> {
     this.logger.log(`Processing job ${job.id} of type ${job.name}`);
     try {
-      const totalCapacityUsed = await this.ipfsPublisher.publish(job.data);
-      await this.setEpochCapacity(totalCapacityUsed);
+      await this.ipfsPublisher.publish(job.data);
 
       this.logger.verbose(`Successfully completed job ${job.id}`);
       return { success: true };

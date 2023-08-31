@@ -25,7 +25,7 @@ export class IPFSPublisher {
     this.logger = new Logger(IPFSPublisher.name);
   }
 
-  public async publish(message: IPublisherJob): Promise<{ [key: string]: bigint }> {
+  public async publish(message: IPublisherJob): Promise<void> {
     const providerKeys = createKeys(this.configService.getProviderAccountSeedPhrase());
 
     const batch: SubmittableExtrinsic<'rxjs', ISubmittableResult>[] = [];
@@ -33,22 +33,20 @@ export class IPFSPublisher {
     return this.processSingleBatch(message.id, providerKeys, tx);
   }
 
-  async processSingleBatch(jobId: string, providerKeys: KeyringPair, tx: SubmittableExtrinsic<'rxjs', ISubmittableResult>): Promise<{ [key: string]: bigint }> {
+  async processSingleBatch(jobId: string, providerKeys: KeyringPair, tx: SubmittableExtrinsic<'rxjs', ISubmittableResult>): Promise<void> {
     this.logger.debug(`Submitting tx of size ${tx.length}`);
     try {
       const currrentEpoch = await this.blockchainService.getCurrentCapacityEpoch();
-      const [txHash, eventMap] = await this.blockchainService
+      const txHash = await this.blockchainService
         .createExtrinsic({ pallet: 'frequencyTxPayment', extrinsic: 'payWithCapacity' }, { eventPallet: 'messages', event: 'MessagesStored' }, providerKeys, [tx])
         .signAndSend();
       if (!txHash) {
         throw new Error('Tx hash is undefined');
       }
 
-      const capacityWithDrawn = BigInt(eventMap['capacity.CapacityWithdrawn'].data[1].toString());
-
       this.sendJobToTxReceiptQueue(jobId, txHash);
-      this.logger.debug(`Batch processed, capacity withdrawn: ${capacityWithDrawn}`);
-      return { [currrentEpoch.toString()]: capacityWithDrawn };
+      this.eventEmitter.emit('txSubmitted', { txHash, jobId });
+      this.logger.debug(`Tx submitted: ${txHash}`);
     } catch (e) {
       this.logger.error(`Error processing batch: ${e}`);
       throw e;
