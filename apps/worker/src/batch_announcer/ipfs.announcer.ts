@@ -4,6 +4,7 @@ import { PassThrough } from 'node:stream';
 import { ParquetWriter } from '@dsnp/parquetjs';
 import parquet from '@dsnp/frequency-schemas/parquet';
 import { ActivityContentAttachment, ActivityContentTag } from '@dsnp/activity-content/types';
+import { Helia } from 'helia';
 import { BlockchainService } from '../blockchain/blockchain.service';
 import { ConfigService } from '../../../api/src/config/config.service';
 import { createBroadcast, BroadcastAnnouncement, createNote } from '../../../../libs/common/src/interfaces/dsnp';
@@ -23,7 +24,7 @@ export class IPFSAnnouncer {
     this.logger = new Logger(IPFSAnnouncer.name);
   }
 
-  public async announce(batchJob: IBatchAnnouncerJobData): Promise<IPublisherJob> {
+  public async announce(batchJob: IBatchAnnouncerJobData, helia: Helia): Promise<IPublisherJob> {
     this.logger.debug(`Announcing batch ${batchJob.batchId} on IPFS`);
     const { batchId, schemaId, announcements } = batchJob;
 
