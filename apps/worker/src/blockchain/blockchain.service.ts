@@ -9,10 +9,10 @@ import { SubmittableExtrinsic } from '@polkadot/api/types';
 import { AnyNumber, ISubmittableResult } from '@polkadot/types/types';
 import { u32, Option, u128 } from '@polkadot/types';
 import { PalletCapacityCapacityDetails, PalletCapacityEpochInfo, PalletSchemasSchema } from '@polkadot/types/lookup';
+import { blake2b256 } from '@multiformats/blake2/dist/src/blake2b';
+import { toMultibase } from '@dsnp/activity-content/hash';
 import { ConfigService } from '../../../api/src/config/config.service';
 import { Extrinsic } from './extrinsic';
-import { blake2b256 } from '@multiformats/blake2/dist/src/blake2b';
-import { toMultibase } from "@dsnp/activity-content/hash";
 
 @Injectable()
 export class BlockchainService implements OnApplicationBootstrap, OnApplicationShutdown {
@@ -146,13 +146,4 @@ export class BlockchainService implements OnApplicationBootstrap, OnApplicationS
     const schema: PalletSchemasSchema = await this.query('schemas', 'schemas', schemaId);
     return schema;
   }
-  // const hashBuffer = async (fileBuffer: Buffer): Promise<string> => {
-  //   const hash = await blake2b256.digest(fileBuffer);
-  //   return toMultibase(hash.bytes, "blake2b-256");
-  // };
-  public async hashFile(fileBuffer: Buffer): Promise<string> {
-    const hash = await blake2b256.digest(fileBuffer);
-    return toMultibase(hash.bytes, "blake2b-256");
-  }
-  
 }

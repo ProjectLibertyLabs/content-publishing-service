@@ -3,15 +3,15 @@ import { EventEmitter2 } from '@nestjs/event-emitter';
 import { PassThrough } from 'node:stream';
 import { ParquetWriter } from '@dsnp/parquetjs';
 import parquet from '@dsnp/frequency-schemas/parquet';
+import { createNote } from '@dsnp/activity-content/factories';
+import { ActivityContentAttachment, ActivityContentTag } from '@dsnp/activity-content/types';
+import { blake2b256 } from '@multiformats/blake2/dist/src/blake2b';
+import { toMultibase } from '@dsnp/activity-content/hash';
 import { BlockchainService } from '../blockchain/blockchain.service';
 import { ConfigService } from '../../../api/src/config/config.service';
-import { IBatchAnnouncerJobData } from '../interfaces/batch-announcer.job.interface';
-import {
-  createNote,
-} from '@dsnp/activity-content/factories';
-import { ActivityContentAttachment, ActivityContentTag } from '@dsnp/activity-content/types';
+import { createBroadcast, BroadcastAnnouncement } from '../../../../libs/common/src/interfaces/dsnp';
 import { AnnouncementTypeDto, BroadcastDto, TagTypeDto } from '../../../../libs/common/src';
-import { BroadcastAnnouncement, createBroadcast } from '../../../../libs/common/src/interfaces/dsnp';
+import { IBatchAnnouncerJobData } from '../interfaces/batch-announcer.job.interface';
 
 @Injectable()
 export class IPFSAnnouncer {
@@ -37,19 +37,20 @@ export class IPFSAnnouncer {
 
     const [parquetSchema, writerOptions] = parquet.fromFrequencySchema(schema);
     const publishStream = new PassThrough();
-  
+
     const writer = await ParquetWriter.openStream(parquetSchema, publishStream as any, writerOptions);
-  
-    for (const announcement of announcements) {
+
+    announcements.forEach(async (announcement) => {
       switch (announcement.announcementType) {
-        case AnnouncementTypeDto.BROADCAST:
-          const broadcastNote = await this.prepateNoteAndBroadcast(announcement.dsnpUserId, announcement.content as BroadcastDto);
+        case AnnouncementTypeDto.BROADCAST: {
+          const broadcastNote = await this.prepareNoteAndBroadcast(announcement.dsnpUserId, announcement.content as BroadcastDto);
           await writer.appendRow(broadcastNote);
           break;
+        }
         default:
           throw new Error(`Unsupported announcement type ${typeof announcement}`);
       }
-    }
+    });
 
     await writer.close();
     const buffer = await this.bufferPublishStream(publishStream);
@@ -59,7 +60,8 @@ export class IPFSAnnouncer {
     this.eventEmitter.emit('batchAnnounced', { batchId, ipfsUrl, hash });
   }
 
-  private async bufferPublishStream(publishStream: PassThrough): Promise<Buffer> {
+  public async bufferPublishStream(publishStream: PassThrough): Promise<Buffer> {
+    this.logger.debug('Buffering publish stream');
     return new Promise((resolve, reject) => {
       const buffers: Buffer[] = [];
       publishStream.on('data', (data) => {
@@ -74,10 +76,10 @@ export class IPFSAnnouncer {
     });
   }
 
-  private async prepateNoteAndBroadcast(dsnpUserId: string, broadcast?: BroadcastDto): Promise<BroadcastAnnouncement> {
+  public async prepareNoteAndBroadcast(dsnpUserId: string, broadcast?: BroadcastDto): Promise<BroadcastAnnouncement> {
     const tags: ActivityContentTag[] = [];
     if (broadcast?.content.tag) {
-      for (const tag of broadcast.content.tag) {
+      broadcast.content.tag.forEach((tag) => {
         switch (tag.type) {
           case TagTypeDto.Hashtag:
             tags.push({ name: tag.name || '' });
@@ -92,13 +94,13 @@ export class IPFSAnnouncer {
           default:
             throw new Error(`Unsupported tag type ${typeof tag.type}`);
         }
-      }
+      });
     }
 
     const attachments: ActivityContentAttachment[] = [];
     // Process attachments if available
 
-    const note = createNote(broadcast?.content.content ?? "", new Date(broadcast?.content.published ?? ""), {
+    const note = createNote(broadcast?.content.content ?? '', new Date(broadcast?.content.published ?? ''), {
       name: broadcast?.content.name,
       location: {
         latitude: broadcast?.content.location?.latitude,
@@ -121,10 +123,18 @@ export class IPFSAnnouncer {
   }
 
   private async pinToIPFS(content: string): Promise<[string, string]> {
-    return ["", ""]
+    this.logger.debug('Pinning content to IPFS');
+    return ['', '']; // Placeholder implementation
   }
 
   private async formIpfsUrl(cid: string, hash: string): Promise<string> {
-    return "";
+    this.logger.debug('Forming IPFS URL');
+    return ''; // Placeholder implementation
+  }
+
+  public async hashFile(fileBuffer: Buffer): Promise<string> {
+    this.logger.debug('Hashing file');
+    const hash = await blake2b256.digest(fileBuffer);
+    return toMultibase(hash.bytes, 'blake2b-256');
   }
 }
