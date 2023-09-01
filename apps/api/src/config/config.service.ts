@@ -7,8 +7,8 @@ import { ConfigService as NestConfigService } from '@nestjs/config';
 import { ICapacityLimit } from '../interfaces/capacity-limit.interface';
 
 export interface ConfigEnvironmentVariables {
-  IPFS_ENDPOINT: string;
-  IPFS_GATEWAY_URL: string;
+  IPFS_ENDPOINT: URL;
+  IPFS_GATEWAY_URL: URL;
   IPFS_BASIC_AUTH_USER: string;
   IPFS_BASIC_AUTH_SECRET: string;
   REDIS_URL: URL;

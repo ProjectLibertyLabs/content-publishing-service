@@ -12,6 +12,7 @@ import { ConfigService } from '../../../api/src/config/config.service';
 import { createBroadcast, BroadcastAnnouncement } from '../../../../libs/common/src/interfaces/dsnp';
 import { AnnouncementTypeDto, BroadcastDto, TagTypeDto } from '../../../../libs/common/src';
 import { IBatchAnnouncerJobData } from '../interfaces/batch-announcer.job.interface';
+import { IPublisherJob } from '../interfaces/publisher-job.interface';
 
 @Injectable()
 export class IPFSAnnouncer {
@@ -25,7 +26,7 @@ export class IPFSAnnouncer {
     this.logger = new Logger(IPFSAnnouncer.name);
   }
 
-  public async announce(batchJob: IBatchAnnouncerJobData): Promise<void> {
+  public async announce(batchJob: IBatchAnnouncerJobData): Promise<IPublisherJob> {
     this.logger.debug(`Announcing batch ${batchJob.batchId} on IPFS`);
     const { batchId, schemaId, announcements } = batchJob;
 
@@ -57,7 +58,7 @@ export class IPFSAnnouncer {
     const [cid, hash] = await this.pinToIPFS(buffer.toString());
     const ipfsUrl = await this.formIpfsUrl(cid, hash);
     this.logger.debug(`Batch ${batchId} published to IPFS at ${ipfsUrl}`);
-    this.eventEmitter.emit('batchAnnounced', { batchId, ipfsUrl, hash });
+    return { id: batchId, schemaId, data: { cid, payloadLength: buffer.length } };
   }
 
   public async bufferPublishStream(publishStream: PassThrough): Promise<Buffer> {

@@ -47,7 +47,8 @@ export class BatchAnnouncementService extends WorkerHost implements OnApplicatio
   async process(job: Job<IBatchAnnouncerJobData, any, string>): Promise<any> {
     this.logger.log(`Processing job ${job.id} of type ${job.name}`);
     try {
-      await this.ipfsPublisher.announce(job.data);
+      const publisherJob = await this.ipfsPublisher.announce(job.data);
+      await this.publishQueue.add(publisherJob.id, publisherJob);
       this.logger.log(`Completed job ${job.id} of type ${job.name}`);
       return job.data;
     } catch (e) {

@@ -5,10 +5,10 @@ import { mnemonicValidate } from '@polkadot/util-crypto';
 export const configModuleOptions: ConfigModuleOptions = {
   isGlobal: true,
   validationSchema: Joi.object({
-    IPFS_ENDPOINT: Joi.string().uri().required(),
-    IPFS_GATEWAY_URL: Joi.string().uri().required(),
-    IPFS_BASIC_AUTH_USER: Joi.string().default(''),
-    IPFS_BASIC_AUTH_SECRET: Joi.string().default(''),
+    IPFS_ENDPOINT: Joi.string().uri().default('https://ipfs.infura.io:5001'),
+    IPFS_GATEWAY_URL: Joi.string().uri().default('https://ipfs.io/ipfs/[CID]'),
+    IPFS_BASIC_AUTH_USER: Joi.string().allow('').default(''),
+    IPFS_BASIC_AUTH_SECRET: Joi.string().allow('').default(''),
     REDIS_URL: Joi.string().uri().required(),
     FREQUENCY_URL: Joi.string().uri().required(),
     PROVIDER_ID: Joi.required().custom((value: string, helpers) => {
