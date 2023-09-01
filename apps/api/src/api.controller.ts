@@ -5,6 +5,7 @@ import { ApiService } from './api.service';
 import {
   AnnouncementResponseDto,
   AnnouncementTypeDto,
+  AssetIncludedRequestDto,
   BroadcastDto,
   DSNP_VALID_MIME_TYPES,
   DsnpContentHashParam,
@@ -64,14 +65,14 @@ export class ApiController {
   @Post('content/:userDsnpId/broadcast')
   @HttpCode(202)
   async broadcast(@Param() userDsnpId: DsnpUserIdParam, @Body() broadcastDto: BroadcastDto): Promise<AnnouncementResponseDto> {
-    await this.apiService.validateAssets(AnnouncementTypeDto.BROADCAST, broadcastDto);
+    await this.apiService.validateAssets(broadcastDto as AssetIncludedRequestDto);
     return this.apiService.enqueueRequest(AnnouncementTypeDto.BROADCAST, userDsnpId.userDsnpId, broadcastDto);
   }
 
   @Post('content/:userDsnpId/reply')
   @HttpCode(202)
   async reply(@Param() userDsnpId: DsnpUserIdParam, @Body() replyDto: ReplyDto): Promise<AnnouncementResponseDto> {
-    await this.apiService.validateAssets(AnnouncementTypeDto.REPLY, replyDto);
+    await this.apiService.validateAssets(replyDto as AssetIncludedRequestDto);
     return this.apiService.enqueueRequest(AnnouncementTypeDto.REPLY, userDsnpId.userDsnpId, replyDto);
   }
 
@@ -84,7 +85,7 @@ export class ApiController {
   @Put('content/:userDsnpId/:targetContentHash')
   @HttpCode(202)
   async update(@Param() userDsnpId: DsnpUserIdParam, @Param() targetContentHash: DsnpContentHashParam, @Body() updateDto: UpdateDto): Promise<AnnouncementResponseDto> {
-    await this.apiService.validateAssets(AnnouncementTypeDto.UPDATE, updateDto);
+    await this.apiService.validateAssets(updateDto as AssetIncludedRequestDto);
     return this.apiService.enqueueRequest(AnnouncementTypeDto.UPDATE, userDsnpId.userDsnpId, updateDto, targetContentHash.targetContentHash);
   }
 
@@ -97,7 +98,7 @@ export class ApiController {
   @Put('profile/:userDsnpId')
   @HttpCode(202)
   async profile(@Param() userDsnpId: DsnpUserIdParam, @Body() profileDto: ProfileDto): Promise<AnnouncementResponseDto> {
-    await this.apiService.validateAssets(AnnouncementTypeDto.PROFILE, profileDto);
+    await this.apiService.validateAssets(profileDto as AssetIncludedRequestDto);
     return this.apiService.enqueueRequest(AnnouncementTypeDto.PROFILE, userDsnpId.userDsnpId, profileDto);
   }
 }
