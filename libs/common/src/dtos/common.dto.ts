@@ -25,6 +25,12 @@ export class UploadResponseDto {
   assetIds: Array<string>;
 }
 
+export class AssetValidationResponseDto {
+  isValid: boolean;
+
+  errorMessages?: Array<string>;
+}
+
 export class FilesUploadDto {
   @ApiProperty({ type: 'array', items: { type: 'string', format: 'binary' } })
   files: any[];
