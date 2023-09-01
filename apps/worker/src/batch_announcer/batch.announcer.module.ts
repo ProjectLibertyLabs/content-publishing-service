@@ -11,10 +11,12 @@ import { ConfigModule } from '../../../api/src/config/config.module';
 import { ConfigService } from '../../../api/src/config/config.service';
 import { IPFSAnnouncer } from './ipfs.announcer';
 import { QueueConstants } from '../../../../libs/common/src';
+import { BlockchainModule } from '../blockchain/blockchain.module';
 
 @Module({
   imports: [
     ConfigModule,
+    BlockchainModule,
     EventEmitterModule,
     RedisModule.forRootAsync(
       {

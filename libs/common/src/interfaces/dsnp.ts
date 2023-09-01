@@ -1,6 +1,9 @@
 /**
  * AnnouncementType: an enum representing different types of DSNP announcements
  */
+
+import { ActivityContentNote } from '@dsnp/activity-content/types';
+
 // eslint-disable-next-line no-shadow
 export enum AnnouncementType {
   Tombstone = 0,
@@ -160,4 +163,21 @@ export const createProfile = (fromId: string, url: string, hash: string): Profil
   contentHash: hash,
   fromId,
   url,
+});
+
+/**
+ * createNote() provides a simple factory for generating an ActivityContentNote
+ * object.
+ * @param content - The text content to include in the note
+ * @param published - the Date that the note was claimed to be published
+ * @param options - Overrides default fields for the ActivityContentNote
+ * @returns An ActivityContentNote object
+ */
+export const createNote = (content: string, published: Date, options?: Partial<ActivityContentNote>): ActivityContentNote => ({
+  '@context': 'https://www.w3.org/ns/activitystreams',
+  type: 'Note',
+  mediaType: 'text/plain',
+  published: published.toISOString(),
+  content,
+  ...options,
 });

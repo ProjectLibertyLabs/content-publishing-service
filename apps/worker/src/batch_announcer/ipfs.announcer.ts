@@ -3,13 +3,10 @@ import { EventEmitter2 } from '@nestjs/event-emitter';
 import { PassThrough } from 'node:stream';
 import { ParquetWriter } from '@dsnp/parquetjs';
 import parquet from '@dsnp/frequency-schemas/parquet';
-import { createNote } from '@dsnp/activity-content/factories';
 import { ActivityContentAttachment, ActivityContentTag } from '@dsnp/activity-content/types';
-import { blake2b256 } from '@multiformats/blake2/dist/src/blake2b';
-import { toMultibase } from '@dsnp/activity-content/hash';
 import { BlockchainService } from '../blockchain/blockchain.service';
 import { ConfigService } from '../../../api/src/config/config.service';
-import { createBroadcast, BroadcastAnnouncement } from '../../../../libs/common/src/interfaces/dsnp';
+import { createBroadcast, BroadcastAnnouncement, createNote } from '../../../../libs/common/src/interfaces/dsnp';
 import { AnnouncementTypeDto, BroadcastDto, TagTypeDto } from '../../../../libs/common/src';
 import { IBatchAnnouncerJobData } from '../interfaces/batch-announcer.job.interface';
 import { IPublisherJob } from '../interfaces/publisher-job.interface';
@@ -133,9 +130,9 @@ export class IPFSAnnouncer {
     return ''; // Placeholder implementation
   }
 
-  public async hashFile(fileBuffer: Buffer): Promise<string> {
-    this.logger.debug('Hashing file');
-    const hash = await blake2b256.digest(fileBuffer);
-    return toMultibase(hash.bytes, 'blake2b-256');
-  }
+  // public async hashFile(fileBuffer: Buffer): Promise<string> {
+  //   this.logger.debug('Hashing file');
+  //   const hash = await blake2b256.digest(fileBuffer);
+  //   return toMultibase(hash.bytes, 'blake2b-256');
+  // }
 }
