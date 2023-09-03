@@ -52,11 +52,13 @@ export class IpfsService {
       throw new Error(`Unable to pin file: ${filename}`);
     }
     // Convert to CID v1 base58btc
-    const cid = CID.parse(data.Hash).toV1();
+    // TODO multiformats workaround
+    // const cid = CID.parse(data.Hash).toV1();
+    const cid = data.Hash.toString();
 
-    console.log(`Pinned to IPFS: ${cid.toString(bases.base58btc)}`);
+    console.log(`Pinned to IPFS: ${cid.toString()}`); // TODO multiformats workaround
     return {
-      cid: cid.toString(bases.base58btc),
+      cid: cid.toString(), // TODO multiformats workaround bases.base58btc
       cidBytes: cid.bytes,
       fileName: data.Name,
       size: data.Size,
