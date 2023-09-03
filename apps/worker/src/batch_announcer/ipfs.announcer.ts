@@ -13,7 +13,7 @@ import { IBatchAnnouncerJobData } from '../interfaces/batch-announcer.job.interf
 import { IPublisherJob } from '../interfaces/publisher-job.interface';
 
 @Injectable()
-export class IPFSAnnouncer {
+export class IpfsAnnouncer {
   private logger: Logger;
 
   constructor(
@@ -21,10 +21,10 @@ export class IPFSAnnouncer {
     private blockchainService: BlockchainService,
     private eventEmitter: EventEmitter2,
   ) {
-    this.logger = new Logger(IPFSAnnouncer.name);
+    this.logger = new Logger(IpfsAnnouncer.name);
   }
 
-  public async announce(batchJob: IBatchAnnouncerJobData, helia: Helia): Promise<IPublisherJob> {
+  public async announce(batchJob: IBatchAnnouncerJobData): Promise<IPublisherJob> {
     this.logger.debug(`Announcing batch ${batchJob.batchId} on IPFS`);
     const { batchId, schemaId, announcements } = batchJob;
 

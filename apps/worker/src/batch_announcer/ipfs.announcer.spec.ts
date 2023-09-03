@@ -1,9 +1,9 @@
 // test file for ipfs announcer
 import { describe, it, beforeEach } from '@jest/globals';
-import { IPFSAnnouncer } from './ipfs.announcer';
+import { IpfsAnnouncer } from './ipfs.announcer';
 
 describe('IPFSAnnouncer', () => {
-  let ipfsAnnouncer: IPFSAnnouncer;
+  let ipfsAnnouncer: IpfsAnnouncer;
 
   beforeEach(async () => {});
 

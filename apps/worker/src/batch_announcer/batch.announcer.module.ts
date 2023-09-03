@@ -9,9 +9,10 @@ import { RedisModule } from '@liaoliaots/nestjs-redis';
 import { BatchAnnouncementService } from './batch.announcer.service';
 import { ConfigModule } from '../../../api/src/config/config.module';
 import { ConfigService } from '../../../api/src/config/config.service';
-import { IPFSAnnouncer } from './ipfs.announcer';
+import { IpfsAnnouncer } from './ipfs.announcer';
 import { QueueConstants } from '../../../../libs/common/src';
 import { BlockchainModule } from '../blockchain/blockchain.module';
+import { IpfsService } from './ipfs.client';
 
 @Module({
   imports: [
@@ -77,7 +78,7 @@ import { BlockchainModule } from '../blockchain/blockchain.module';
     ),
   ],
   controllers: [],
-  providers: [BatchAnnouncementService, IPFSAnnouncer],
-  exports: [BullModule, BatchAnnouncementService, IPFSAnnouncer],
+  providers: [BatchAnnouncementService, IpfsAnnouncer, IpfsService],
+  exports: [BullModule, BatchAnnouncementService, IpfsAnnouncer, IpfsService],
 })
 export class BatchAnnouncerModule {}

@@ -5,9 +5,8 @@ import { Job, Queue } from 'bullmq';
 import Redis from 'ioredis';
 import { SchedulerRegistry } from '@nestjs/schedule';
 import { EventEmitter2 } from '@nestjs/event-emitter';
-import { Helia } from 'helia';
 import { ConfigService } from '../../../api/src/config/config.service';
-import { IPFSAnnouncer } from './ipfs.announcer';
+import { IpfsAnnouncer } from './ipfs.announcer';
 import { CAPACITY_EPOCH_TIMEOUT_NAME } from '../../../../libs/common/src/constants';
 import { IBatchAnnouncerJobData } from '../interfaces/batch-announcer.job.interface';
 import { QueueConstants } from '../../../../libs/common/src';
@@ -21,22 +20,11 @@ export class BatchAnnouncementService extends WorkerHost implements OnApplicatio
 
   private capacityExhausted = false;
 
-  private helia?: Helia;
-
-  async getHelia(): Promise<Helia> {
-    if (this.helia == null) {
-      const { createHelia } = await import('helia');
-      this.helia = await createHelia();
-    }
-
-    return this.helia;
-  }
-
   constructor(
     @InjectRedis() private cacheManager: Redis,
     @InjectQueue(QueueConstants.PUBLISH_QUEUE_NAME) private publishQueue: Queue,
     private configService: ConfigService,
-    private ipfsPublisher: IPFSAnnouncer,
+    private ipfsPublisher: IpfsAnnouncer,
     private schedulerRegistry: SchedulerRegistry,
     private eventEmitter: EventEmitter2,
   ) {
@@ -59,10 +47,7 @@ export class BatchAnnouncementService extends WorkerHost implements OnApplicatio
   async process(job: Job<IBatchAnnouncerJobData, any, string>): Promise<any> {
     this.logger.log(`Processing job ${job.id} of type ${job.name}`);
     try {
-      if (this.helia == null) {
-        await this.getHelia();
-      }
-      const publisherJob = await this.ipfsPublisher.announce(job.data, this.helia!);
+      const publisherJob = await this.ipfsPublisher.announce(job.data);
 
       await this.publishQueue.add(publisherJob.id, publisherJob);
       this.logger.log(`Completed job ${job.id} of type ${job.name}`);
