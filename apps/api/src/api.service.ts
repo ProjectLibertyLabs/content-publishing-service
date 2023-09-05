@@ -75,7 +75,6 @@ export class ApiService {
     const redisResults = await Promise.all(checkingList.map((obj) => this.redis.get(getAssetMetadataKey(obj.referenceId))));
     const errors: string[] = [];
     redisResults.forEach((res, index) => {
-      console.log(res);
       if (res === null) {
         errors.push(`${content.profile ? 'profile.icon' : 'content.assets'}.referenceId ${checkingList[index].referenceId} does not exist!`);
       } else if (checkingList[index].onlyImage) {

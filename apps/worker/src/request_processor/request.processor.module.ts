@@ -50,7 +50,7 @@ import { RequestProcessorService } from './request.processor.service';
       name: QueueConstants.ASSET_QUEUE_NAME,
     }),
     BullModule.registerQueue({
-      name: QueueConstants.REACTION_QUEUE_NAME,
+      name: QueueConstants.REQUEST_QUEUE_NAME,
     }),
   ],
   providers: [RequestProcessorService],

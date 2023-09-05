@@ -7,7 +7,7 @@ import { ConfigService } from '../../../api/src/config/config.service';
 import { AnnouncementTypeDto, BroadcastDto, IRequestJob, ProfileDto, QueueConstants, ReplyDto, UpdateDto } from '../../../../libs/common/src';
 
 @Injectable()
-@Processor(QueueConstants.REACTION_QUEUE_NAME)
+@Processor(QueueConstants.REQUEST_QUEUE_NAME)
 export class RequestProcessorService extends WorkerHost {
   private logger: Logger;
 
@@ -39,10 +39,14 @@ export class RequestProcessorService extends WorkerHost {
     }
     if (assets.length > 0) {
       // TODO: check existence in IPFS
+      // if one of assets does not exists delay the job for a future attempt
       const { data } = job;
       data.dependencyAttempt += 1;
-      if (data.dependencyAttempt < 3) {
-        await job.moveToDelayed(data.dependencyAttempt * 60 * 1000, job.token); // TODO: get from config
+      if (data.dependencyAttempt <= 3) {
+        // attempts 10 seconds, 20 seconds, 40 seconds
+        const delayedTime = 2 ** data.dependencyAttempt * 5 * 1000;
+        this.logger.debug(`delayed time = ${delayedTime}  token=${job.token}`);
+        await job.moveToDelayed(Date.now() + delayedTime, job.token); // TODO: get from config
         await job.update(data);
         throw new DelayedError();
       } else {
