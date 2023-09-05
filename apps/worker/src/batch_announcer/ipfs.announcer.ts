@@ -3,11 +3,18 @@ import { EventEmitter2 } from '@nestjs/event-emitter';
 import { PassThrough } from 'node:stream';
 import { ParquetWriter } from '@dsnp/parquetjs';
 import parquet from '@dsnp/frequency-schemas/parquet';
-import { ActivityContentAttachment, ActivityContentTag } from '@dsnp/activity-content/types';
+import {
+  ActivityContentAttachment,
+  ActivityContentImage,
+  ActivityContentImageLink,
+  ActivityContentLink,
+  ActivityContentNote,
+  ActivityContentTag,
+} from '@dsnp/activity-content/types';
 import { BlockchainService } from '../blockchain/blockchain.service';
 import { ConfigService } from '../../../api/src/config/config.service';
 import { createBroadcast, BroadcastAnnouncement, createNote } from '../../../../libs/common/src/interfaces/dsnp';
-import { AnnouncementTypeDto, BroadcastDto, TagTypeDto } from '../../../../libs/common/src';
+import { AnnouncementTypeDto, AttachmentTypeDto, BroadcastDto, TagTypeDto } from '../../../../libs/common/src';
 import { IBatchAnnouncerJobData } from '../interfaces/batch-announcer.job.interface';
 import { IPublisherJob } from '../interfaces/publisher-job.interface';
 import { IpfsService } from './ipfs.client';
@@ -99,7 +106,30 @@ export class IpfsAnnouncer {
     }
 
     const attachments: ActivityContentAttachment[] = [];
-    // Process attachments if available
+    const notes: ActivityContentNote[] = [];
+    if (broadcast?.content.assets) {
+      broadcast.content.assets.forEach((asset) => {
+        switch (asset.type) {
+          case AttachmentTypeDto.LINK:
+            const link: ActivityContentLink = {
+              type: 'Link',
+              href: asset.href || '',
+              name: asset.name || '',
+            };
+            attachments.push(link);
+            break;
+          case AttachmentTypeDto.IMAGE:
+            // TODO
+            break;
+          case AttachmentTypeDto.VIDEO:
+            // TODO
+            break;
+          case AttachmentTypeDto.AUDIO:
+            // TODO
+            break;
+        }
+      });
+    }
 
     const note = createNote(broadcast?.content.content ?? '', new Date(broadcast?.content.published ?? ''), {
       name: broadcast?.content.name,
