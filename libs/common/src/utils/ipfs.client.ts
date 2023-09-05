@@ -6,7 +6,7 @@ import FormData from 'form-data';
 import { extension as getExtension } from 'mime-types';
 import { CID } from 'multiformats/cid';
 import { blake2b256 as hasher } from '@multiformats/blake2/blake2b';
-import { base58btc } from 'multiformats/bases/base58';
+import { base32 } from 'multiformats/bases/base32';
 import { create } from 'multiformats/hashes/digest';
 import { ConfigService } from '../../../../apps/api/src/config/config.service';
 
@@ -53,10 +53,10 @@ export class IpfsService {
     }
     const cid = CID.parse(data.Hash).toV1();
 
-    this.logger.debug(`Pinned file: ${filename} with size: ${data.Size} and cid: ${cid.toString(base58btc)}`);
+    this.logger.debug(`Pinned file: ${filename} with size: ${data.Size} and cid: ${cid.toString(base32)}`);
 
     return {
-      cid: cid.toString(base58btc),
+      cid: cid.toString(base32),
       cidBytes: cid.bytes,
       fileName: data.Name,
       size: data.Size,
@@ -78,7 +78,7 @@ export class IpfsService {
     this.logger.debug(`Hashing file buffer with length: ${fileBuffer.length}`);
     const hashed = await hasher.digest(fileBuffer);
     const hash = create(hasher.code, hashed.bytes);
-    return base58btc.encode(hash.bytes);
+    return base32.encode(hash.bytes);
   }
 
   public ipfsUrl(cid: string): string {

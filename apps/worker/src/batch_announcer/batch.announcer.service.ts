@@ -18,8 +18,6 @@ import { QueueConstants } from '../../../../libs/common/src';
 export class BatchAnnouncementService extends WorkerHost implements OnApplicationBootstrap, OnModuleDestroy {
   private logger: Logger;
 
-  private capacityExhausted = false;
-
   constructor(
     @InjectRedis() private cacheManager: Redis,
     @InjectQueue(QueueConstants.PUBLISH_QUEUE_NAME) private publishQueue: Queue,
