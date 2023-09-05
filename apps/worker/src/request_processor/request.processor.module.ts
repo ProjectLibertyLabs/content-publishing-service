@@ -9,6 +9,7 @@ import { ConfigModule } from '../../../api/src/config/config.module';
 import { ConfigService } from '../../../api/src/config/config.service';
 import { QueueConstants } from '../../../../libs/common/src';
 import { RequestProcessorService } from './request.processor.service';
+import { IpfsService } from '../../../../libs/common/src/utils/ipfs.client';
 
 @Module({
   imports: [
@@ -53,7 +54,7 @@ import { RequestProcessorService } from './request.processor.service';
       name: QueueConstants.REQUEST_QUEUE_NAME,
     }),
   ],
-  providers: [RequestProcessorService],
-  exports: [BullModule, RequestProcessorService],
+  providers: [RequestProcessorService, IpfsService],
+  exports: [BullModule, RequestProcessorService, IpfsService],
 })
 export class RequestProcessorModule {}

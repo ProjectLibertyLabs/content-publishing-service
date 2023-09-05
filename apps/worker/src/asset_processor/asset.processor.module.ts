@@ -9,6 +9,7 @@ import { ConfigModule } from '../../../api/src/config/config.module';
 import { ConfigService } from '../../../api/src/config/config.service';
 import { QueueConstants } from '../../../../libs/common/src';
 import { AssetProcessorService } from './asset.processor.service';
+import { IpfsService } from '../../../../libs/common/src/utils/ipfs.client';
 
 @Module({
   imports: [
@@ -50,7 +51,7 @@ import { AssetProcessorService } from './asset.processor.service';
       name: QueueConstants.ASSET_QUEUE_NAME,
     }),
   ],
-  providers: [AssetProcessorService],
-  exports: [BullModule, AssetProcessorService],
+  providers: [AssetProcessorService, IpfsService],
+  exports: [BullModule, AssetProcessorService, IpfsService],
 })
 export class AssetProcessorModule {}

@@ -5,23 +5,18 @@ import { createHash } from 'crypto';
 import { BulkJobOptions } from 'bullmq/dist/esm/interfaces';
 import { InjectRedis } from '@liaoliaots/nestjs-redis';
 import Redis from 'ioredis';
-import { ValidationError } from 'class-validator';
 import { HttpErrorByCode } from '@nestjs/common/utils/http-error-by-code.util';
 import {
   AnnouncementResponseDto,
   AnnouncementTypeDto,
   AssetIncludedRequestDto,
-  BroadcastDto,
   IRequestJob,
   isImage,
-  ProfileDto,
   QueueConstants,
-  ReplyDto,
   RequestTypeDto,
-  UpdateDto,
   UploadResponseDto,
 } from '../../../libs/common/src';
-import { calculateIpfsCID } from '../../../libs/common/src/utils/ipfs';
+import { calculateDsnpHash, calculateIpfsCID } from '../../../libs/common/src/utils/ipfs';
 import { IAssetJob, IAssetMetadata } from '../../../libs/common/src/interfaces/asset-job.interface';
 import { RedisUtils } from '../../../libs/common/src/utils/redis';
 import getAssetDataKey = RedisUtils.getAssetDataKey;
@@ -97,10 +92,6 @@ export class ApiService {
     const referencePromises: Promise<string>[] = files.map((file) => calculateIpfsCID(file.buffer));
     const references = await Promise.all(referencePromises);
 
-    // TODO: enable after figuring out ESM module
-    // const dsnpHashPromises: Promise<string>[] = files.map((file) => calculateDsnpHash(file.buffer));
-    // const dsnpHashes = await Promise.all(dsnpHashPromises);
-
     // add assets to redis
     const redisDataOps = files.map((f, index) => this.redis.set(getAssetDataKey(references[index]), f.buffer));
     const addedData = await Promise.all(redisDataOps);
@@ -113,7 +104,6 @@ export class ApiService {
         name: `Asset Job - ${references[index]}`,
         data: {
           ipfsCid: references[index],
-          dsnpHash: '', // TODO set from dsnpHashes[index]
           contentLocation: getAssetDataKey(references[index]),
           metadataLocation: getAssetMetadataKey(references[index]),
           mimeType: f.mimetype,
