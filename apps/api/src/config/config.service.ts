@@ -97,4 +97,12 @@ export class ConfigService {
   public getIpfsBasicAuthSecret(): string {
     return this.nestConfigService.get<string>('IPFS_BASIC_AUTH_SECRET')!;
   }
+
+  public getIpfsCidPlaceholder(cid): string {
+    const gatewayUrl = this.getIpfsGatewayUrl();
+    if (!gatewayUrl || !gatewayUrl.includes('[CID]')) {
+      return `https://ipfs.io/ipfs/${cid}`;
+    }
+    return gatewayUrl.replace('[CID]', cid);
+  }
 }

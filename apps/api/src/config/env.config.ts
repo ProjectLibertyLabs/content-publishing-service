@@ -6,7 +6,7 @@ export const configModuleOptions: ConfigModuleOptions = {
   isGlobal: true,
   validationSchema: Joi.object({
     IPFS_ENDPOINT: Joi.string().uri().default('https://ipfs.infura.io:5001'),
-    IPFS_GATEWAY_URL: Joi.string().uri().default('https://ipfs.io/ipfs/[CID]'),
+    IPFS_GATEWAY_URL: Joi.string().default('https://ipfs.io/ipfs/[CID]'),
     IPFS_BASIC_AUTH_USER: Joi.string().allow('').default(''),
     IPFS_BASIC_AUTH_SECRET: Joi.string().allow('').default(''),
     REDIS_URL: Joi.string().uri().required(),

@@ -11,6 +11,7 @@ import { createBroadcast, BroadcastAnnouncement, createNote } from '../../../../
 import { AnnouncementTypeDto, BroadcastDto, TagTypeDto } from '../../../../libs/common/src';
 import { IBatchAnnouncerJobData } from '../interfaces/batch-announcer.job.interface';
 import { IPublisherJob } from '../interfaces/publisher-job.interface';
+import { IpfsService } from './ipfs.client';
 
 @Injectable()
 export class IpfsAnnouncer {
@@ -19,6 +20,7 @@ export class IpfsAnnouncer {
   constructor(
     private configService: ConfigService,
     private blockchainService: BlockchainService,
+    private ipfsService: IpfsService,
     private eventEmitter: EventEmitter2,
   ) {
     this.logger = new Logger(IpfsAnnouncer.name);
@@ -53,8 +55,8 @@ export class IpfsAnnouncer {
 
     await writer.close();
     const buffer = await this.bufferPublishStream(publishStream);
-    const [cid, hash] = await this.pinToIPFS(buffer.toString());
-    const ipfsUrl = await this.formIpfsUrl(cid, hash);
+    const [cid, hash] = await this.pinStringToIPFS(buffer);
+    const ipfsUrl = await this.formIpfsUrl(cid);
     this.logger.debug(`Batch ${batchId} published to IPFS at ${ipfsUrl}`);
     return { id: batchId, schemaId, data: { cid, payloadLength: buffer.length } };
   }
@@ -115,20 +117,19 @@ export class IpfsAnnouncer {
     });
 
     const noteString = JSON.stringify(note);
-    const [cid, hash] = await this.pinToIPFS(noteString);
-    const ipfsUrl = await this.formIpfsUrl(cid, hash);
+    const [cid, hash] = await this.pinStringToIPFS(Buffer.from(noteString));
+    const ipfsUrl = await this.formIpfsUrl(cid);
     const broadcastActivity = createBroadcast(dsnpUserId, ipfsUrl, hash);
     return broadcastActivity;
   }
 
-  private async pinToIPFS(content: string): Promise<[string, string]> {
-    this.logger.debug('Pinning content to IPFS');
-    return ['', '']; // Placeholder implementation
+  private async pinStringToIPFS(buf: Buffer): Promise<[string, string]> {
+    const { cid, size } = await this.ipfsService.ipfsPin('application/octet-stream', buf);
+    return [cid.toString(), size.toString()];
   }
 
-  private async formIpfsUrl(cid: string, hash: string): Promise<string> {
-    this.logger.debug('Forming IPFS URL');
-    return ''; // Placeholder implementation
+  private async formIpfsUrl(cid: string): Promise<string> {
+    return this.configService.getIpfsCidPlaceholder(cid);
   }
 
   // public async hashFile(fileBuffer: Buffer): Promise<string> {
