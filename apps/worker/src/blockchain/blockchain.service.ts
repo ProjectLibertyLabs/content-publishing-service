@@ -7,10 +7,8 @@ import { KeyringPair } from '@polkadot/keyring/types';
 import { BlockHash, BlockNumber } from '@polkadot/types/interfaces';
 import { SubmittableExtrinsic } from '@polkadot/api/types';
 import { AnyNumber, ISubmittableResult } from '@polkadot/types/types';
-import { u32, Option, u128 } from '@polkadot/types';
+import { u32, Option } from '@polkadot/types';
 import { PalletCapacityCapacityDetails, PalletCapacityEpochInfo, PalletSchemasSchema } from '@polkadot/types/lookup';
-import { blake2b256 } from '@multiformats/blake2/dist/src/blake2b';
-import { toMultibase } from '@dsnp/activity-content/hash';
 import { ConfigService } from '../../../api/src/config/config.service';
 import { Extrinsic } from './extrinsic';
 

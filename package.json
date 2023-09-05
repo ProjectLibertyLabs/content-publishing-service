@@ -38,7 +38,6 @@
     "@frequency-chain/api-augment": "1.7.0",
     "@jest/globals": "^29.5.0",
     "@liaoliaots/nestjs-redis": "^9.0.5",
-    "@multiformats/blake2": "^2.0.0",
     "@nestjs/axios": "^2.0.0",
     "@nestjs/bullmq": "^10.0.0",
     "@nestjs/cli": "^10.1.14",

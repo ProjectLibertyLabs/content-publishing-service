@@ -4,10 +4,6 @@ import { Injectable, Logger } from '@nestjs/common';
 import axios from 'axios';
 import FormData from 'form-data';
 import { extension as getExtension } from 'mime-types';
-import { toMultibase } from '@dsnp/activity-content/hash';
-import { CID } from 'multiformats/cid';
-import { bases } from 'multiformats/basics';
-import { bytes } from 'multiformats';
 import { ConfigService } from '../../../api/src/config/config.service';
 
 export interface FilePin {
