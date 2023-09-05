@@ -35,6 +35,10 @@ export class UpdateDto {
   @IsEnum(UpdateAnnouncementTypeDto)
   targetAnnouncementType: UpdateAnnouncementTypeDto;
 
+  @IsString()
+  @Matches(DSNP_CONTENT_URI_REGEX)
+  inReplyTo?: string;
+
   @IsNotEmpty()
   @ValidateNested()
   @Type(() => NoteActivityDto)

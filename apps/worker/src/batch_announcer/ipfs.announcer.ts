@@ -13,8 +13,28 @@ import {
 } from '@dsnp/activity-content/types';
 import { BlockchainService } from '../blockchain/blockchain.service';
 import { ConfigService } from '../../../api/src/config/config.service';
-import { createBroadcast, BroadcastAnnouncement, createNote } from '../../../../libs/common/src/interfaces/dsnp';
-import { AnnouncementTypeDto, AttachmentTypeDto, BroadcastDto, TagTypeDto } from '../../../../libs/common/src';
+import {
+  createBroadcast,
+  BroadcastAnnouncement,
+  createNote,
+  ReplyAnnouncement,
+  createReply,
+  createReaction,
+  ReactionAnnouncement,
+  ProfileAnnouncement,
+  createProfile,
+} from '../../../../libs/common/src/interfaces/dsnp';
+import {
+  AnnouncementTypeDto,
+  AttachmentTypeDto,
+  BroadcastDto,
+  ProfileDto,
+  ReactionDto,
+  ReplyDto,
+  TagTypeDto,
+  UpdateAnnouncementTypeDto,
+  UpdateDto,
+} from '../../../../libs/common/src';
 import { IBatchAnnouncerJobData } from '../interfaces/batch-announcer.job.interface';
 import { IPublisherJob } from '../interfaces/publisher-job.interface';
 import { IpfsService } from './ipfs.client';
@@ -52,6 +72,36 @@ export class IpfsAnnouncer {
         case AnnouncementTypeDto.BROADCAST: {
           const broadcastNote = await this.prepareNoteAndBroadcast(announcement.dsnpUserId, announcement.content as BroadcastDto);
           await writer.appendRow(broadcastNote);
+          break;
+        }
+        case AnnouncementTypeDto.REPLY: {
+          const replyNote = await this.prepareNoteAndReply(announcement.dsnpUserId, announcement.content as ReplyDto);
+          await writer.appendRow(replyNote);
+          break;
+        }
+        case AnnouncementTypeDto.REACTION: {
+          const reactionNote = await this.prepareNoteAndReaction(announcement.dsnpUserId, announcement.content as ReactionDto);
+          await writer.appendRow(reactionNote);
+          break;
+        }
+        case AnnouncementTypeDto.UPDATE: {
+          const updateInfo = announcement.content as UpdateDto;
+          if (updateInfo.targetAnnouncementType === UpdateAnnouncementTypeDto.BROADCAST) {
+            const broadcastNote = await this.prepareNoteAndBroadcast(announcement.dsnpUserId, { content: updateInfo.content });
+            await writer.appendRow(broadcastNote);
+          } else if (updateInfo.targetAnnouncementType === UpdateAnnouncementTypeDto.REPLY) {
+            const replyNote = await this.prepareNoteAndReply(announcement.dsnpUserId, { inReplyTo: updateInfo.inReplyTo ?? '', content: updateInfo.content });
+            await writer.appendRow(replyNote);
+          }
+          break;
+        }
+        case AnnouncementTypeDto.PROFILE: {
+          const profileNote = await this.prepareNoteAndProfile(announcement.dsnpUserId, announcement.content as ProfileDto);
+          await writer.appendRow(profileNote);
+          break;
+        }
+        case AnnouncementTypeDto.TOMBSTONE: {
+          // TODO
           break;
         }
         default:
@@ -110,7 +160,7 @@ export class IpfsAnnouncer {
     if (broadcast?.content.assets) {
       broadcast.content.assets.forEach((asset) => {
         switch (asset.type) {
-          case AttachmentTypeDto.LINK:
+          case AttachmentTypeDto.LINK: {
             const link: ActivityContentLink = {
               type: 'Link',
               href: asset.href || '',
@@ -118,6 +168,7 @@ export class IpfsAnnouncer {
             };
             attachments.push(link);
             break;
+          }
           case AttachmentTypeDto.IMAGE:
             // TODO
             break;
@@ -127,6 +178,8 @@ export class IpfsAnnouncer {
           case AttachmentTypeDto.AUDIO:
             // TODO
             break;
+          default:
+            throw new Error(`Unsupported attachment type ${typeof asset.type}`);
         }
       });
     }
@@ -151,6 +204,24 @@ export class IpfsAnnouncer {
     const ipfsUrl = await this.formIpfsUrl(cid);
     const broadcastActivity = createBroadcast(dsnpUserId, ipfsUrl, hash);
     return broadcastActivity;
+  }
+
+  public async prepareNoteAndReply(dsnpUserId: string, reply?: ReplyDto): Promise<ReplyAnnouncement> {
+    // TODO
+    this.logger.debug(`Preparing reply for ${dsnpUserId}`);
+    return createReply(dsnpUserId, '', '', '');
+  }
+
+  public async prepareNoteAndReaction(dsnpUserId: string, reaction?: ReactionDto): Promise<ReactionAnnouncement> {
+    // TODO
+    this.logger.debug(`Preparing reaction for ${dsnpUserId}`);
+    return createReaction(dsnpUserId, '', '');
+  }
+
+  public async prepareNoteAndProfile(dsnpUserId: string, profile?: ProfileDto): Promise<ProfileAnnouncement> {
+    // TODO
+    this.logger.debug(`Preparing profile for ${dsnpUserId}`);
+    return createProfile(dsnpUserId, '', '');
   }
 
   private async pinStringToIPFS(buf: Buffer): Promise<[string, string]> {
