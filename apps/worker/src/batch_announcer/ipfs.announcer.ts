@@ -4,7 +4,6 @@ import { PassThrough } from 'node:stream';
 import { ParquetWriter } from '@dsnp/parquetjs';
 import parquet from '@dsnp/frequency-schemas/parquet';
 import { ActivityContentAttachment, ActivityContentTag } from '@dsnp/activity-content/types';
-import { Helia } from 'helia';
 import { BlockchainService } from '../blockchain/blockchain.service';
 import { ConfigService } from '../../../api/src/config/config.service';
 import { createBroadcast, BroadcastAnnouncement, createNote } from '../../../../libs/common/src/interfaces/dsnp';
