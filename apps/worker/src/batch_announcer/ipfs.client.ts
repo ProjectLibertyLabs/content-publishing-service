@@ -4,6 +4,11 @@ import { Injectable, Logger } from '@nestjs/common';
 import axios from 'axios';
 import FormData from 'form-data';
 import { extension as getExtension } from 'mime-types';
+import { CID } from 'multiformats/cid';
+import { blake2b256 as hasher } from '@multiformats/blake2/blake2b';
+import { bytes } from 'multiformats/index';
+import { base58btc } from 'multiformats/bases/base58';
+import { create } from 'multiformats/hashes/digest';
 import { ConfigService } from '../../../api/src/config/config.service';
 
 export interface FilePin {
@@ -47,14 +52,12 @@ export class IpfsService {
     if (!data || !data.Hash || !data.Size) {
       throw new Error(`Unable to pin file: ${filename}`);
     }
-    // Convert to CID v1 base58btc
-    // TODO multiformats workaround
-    // const cid = CID.parse(data.Hash).toV1();
-    const cid = data.Hash.toString();
+    const cid = CID.parse(data.Hash).toV1();
 
-    console.log(`Pinned to IPFS: ${cid.toString()}`); // TODO multiformats workaround
+    this.logger.debug(`Pinned file: ${filename} with size: ${data.Size} and cid: ${cid.toString(base58btc)}`);
+
     return {
-      cid: cid.toString(), // TODO multiformats workaround bases.base58btc
+      cid: cid.toString(base58btc),
       cidBytes: cid.bytes,
       fileName: data.Name,
       size: data.Size,
@@ -74,11 +77,9 @@ export class IpfsService {
 
   private async ipfsHashBuffer(fileBuffer: Buffer): Promise<string> {
     this.logger.debug(`Hashing file buffer with length: ${fileBuffer.length}`);
-    // const hash = await toMultibase(bytes.coerce(blakejs.blake2b(fileBuffer, undefined, 32)), 'blake2b-256');
-    // this.logger.debug(`Hashed file buffer to ${hash}`);
-    // return hash;
-    // TODO figure out how to use multiformats
-    return fileBuffer.toString('hex');
+    const hashed = await hasher.digest(fileBuffer);
+    const hash = create(hasher.code, hashed.bytes);
+    return base58btc.encode(hash.bytes);
   }
 
   public ipfsUrl(cid: string): string {

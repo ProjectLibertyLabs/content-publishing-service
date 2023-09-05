@@ -57,6 +57,7 @@ export class IpfsAnnouncer {
     const [cid, hash] = await this.pinStringToIPFS(buffer);
     const ipfsUrl = await this.formIpfsUrl(cid);
     this.logger.debug(`Batch ${batchId} published to IPFS at ${ipfsUrl}`);
+    this.logger.debug(`Batch ${batchId} hash: ${hash}`);
     return { id: batchId, schemaId, data: { cid, payloadLength: buffer.length } };
   }
 
@@ -130,10 +131,4 @@ export class IpfsAnnouncer {
   private async formIpfsUrl(cid: string): Promise<string> {
     return this.configService.getIpfsCidPlaceholder(cid);
   }
-
-  // public async hashFile(fileBuffer: Buffer): Promise<string> {
-  //   this.logger.debug('Hashing file');
-  //   const hash = await blake2b256.digest(fileBuffer);
-  //   return toMultibase(hash.bytes, 'blake2b-256');
-  // }
 }
