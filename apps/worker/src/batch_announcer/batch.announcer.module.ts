@@ -12,7 +12,7 @@ import { ConfigService } from '../../../api/src/config/config.service';
 import { IpfsAnnouncer } from './ipfs.announcer';
 import { QueueConstants } from '../../../../libs/common/src';
 import { BlockchainModule } from '../blockchain/blockchain.module';
-import { IpfsService } from './ipfs.client';
+import { IpfsService } from '../../../../libs/common/src/utils/ipfs.client';
 
 @Module({
   imports: [

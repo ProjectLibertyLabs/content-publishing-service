@@ -37,7 +37,7 @@ import {
 } from '../../../../libs/common/src';
 import { IBatchAnnouncerJobData } from '../interfaces/batch-announcer.job.interface';
 import { IPublisherJob } from '../interfaces/publisher-job.interface';
-import { IpfsService } from './ipfs.client';
+import { IpfsService } from '../../../../libs/common/src/utils/ipfs.client';
 
 @Injectable()
 export class IpfsAnnouncer {
