@@ -1,10 +1,7 @@
-import { Test, TestingModule } from '@nestjs/testing';
 import { expect, describe, jest, it, beforeEach } from '@jest/globals';
 import assert from 'assert';
 import { FrequencyParquetSchema } from '@dsnp/frequency-schemas/types/frequency';
-import { ConfigService } from '../../../api/src/config/config.service';
-import { BlockchainService } from '../blockchain/blockchain.service';
-import { IpfsService } from '../../../../libs/common/src/utils/ipfs.client';
+import Redis from 'ioredis-mock';
 import { IpfsAnnouncer } from './ipfs.announcer';
 
 // Create a mock for the dependencies
@@ -60,20 +57,11 @@ describe('IpfsAnnouncer', () => {
       bloom_filter: false,
     },
   ];
+  const mockClient = new Redis();
 
   beforeEach(async () => {
-    const module: TestingModule = await Test.createTestingModule({
-      providers: [
-        IpfsAnnouncer,
-        { provide: ConfigService, useValue: mockConfigService },
-        { provide: BlockchainService, useValue: mockBlockchainService },
-        { provide: IpfsService, useValue: mockIpfsService },
-      ],
-    }).compile();
-
-    ipfsAnnouncer = module.get<IpfsAnnouncer>(IpfsAnnouncer);
+    ipfsAnnouncer = new IpfsAnnouncer(mockClient, mockConfigService as any, mockBlockchainService as any, mockIpfsService as any);
   });
-
   it('should be defined', () => {
     expect(ipfsAnnouncer).toBeDefined();
   });

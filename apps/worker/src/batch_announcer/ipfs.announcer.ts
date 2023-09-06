@@ -2,6 +2,9 @@ import { Injectable, Logger } from '@nestjs/common';
 import { PassThrough } from 'node:stream';
 import { ParquetWriter } from '@dsnp/parquetjs';
 import { fromFrequencySchema } from '@dsnp/frequency-schemas/parquet';
+import { InjectRedis } from '@liaoliaots/nestjs-redis';
+import Redis from 'ioredis';
+import { PalletSchemasSchema } from '@polkadot/types/lookup';
 import { BlockchainService } from '../blockchain/blockchain.service';
 import { ConfigService } from '../../../api/src/config/config.service';
 import { IBatchAnnouncerJobData } from '../interfaces/batch-announcer.job.interface';
@@ -13,6 +16,7 @@ export class IpfsAnnouncer {
   private logger: Logger;
 
   constructor(
+    @InjectRedis() private cacheManager: Redis,
     private configService: ConfigService,
     private blockchainService: BlockchainService,
     private ipfsService: IpfsService,
@@ -24,7 +28,17 @@ export class IpfsAnnouncer {
     this.logger.debug(`Announcing batch ${batchJob.batchId} on IPFS`);
     const { batchId, schemaId, announcements } = batchJob;
 
-    const frequencySchema = await this.blockchainService.getSchema(schemaId);
+    let frequencySchema: PalletSchemasSchema;
+
+    const schemaCacheKey = `schema:${schemaId}`;
+    const cachedSchema = await this.cacheManager.get(schemaCacheKey);
+    if (cachedSchema) {
+      frequencySchema = JSON.parse(cachedSchema);
+    } else {
+      frequencySchema = await this.blockchainService.getSchema(schemaId);
+      await this.cacheManager.set(schemaCacheKey, JSON.stringify(frequencySchema));
+    }
+
     const schema = JSON.parse(frequencySchema.model.toString());
     if (!schema) {
       throw new Error(`Unable to parse schema for schemaId ${schemaId}`);
