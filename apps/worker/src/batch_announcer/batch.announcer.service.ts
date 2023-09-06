@@ -6,7 +6,7 @@ import Redis from 'ioredis';
 import { SchedulerRegistry } from '@nestjs/schedule';
 import { EventEmitter2 } from '@nestjs/event-emitter';
 import { ConfigService } from '../../../api/src/config/config.service';
-import { IpfsAnnouncer } from './ipfs.announcer';
+import { BatchAnnouncer } from './batch.announcer';
 import { CAPACITY_EPOCH_TIMEOUT_NAME } from '../../../../libs/common/src/constants';
 import { IBatchAnnouncerJobData } from '../interfaces/batch-announcer.job.interface';
 import { QueueConstants } from '../../../../libs/common/src';
@@ -22,7 +22,7 @@ export class BatchAnnouncementService extends WorkerHost implements OnApplicatio
     @InjectRedis() private cacheManager: Redis,
     @InjectQueue(QueueConstants.PUBLISH_QUEUE_NAME) private publishQueue: Queue,
     private configService: ConfigService,
-    private ipfsPublisher: IpfsAnnouncer,
+    private ipfsPublisher: BatchAnnouncer,
     private schedulerRegistry: SchedulerRegistry,
     private eventEmitter: EventEmitter2,
   ) {

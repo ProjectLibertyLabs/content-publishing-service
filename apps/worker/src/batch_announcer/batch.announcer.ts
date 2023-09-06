@@ -12,7 +12,7 @@ import { IPublisherJob } from '../interfaces/publisher-job.interface';
 import { IpfsService } from '../../../../libs/common/src/utils/ipfs.client';
 
 @Injectable()
-export class IpfsAnnouncer {
+export class BatchAnnouncer {
   private logger: Logger;
 
   constructor(
@@ -21,7 +21,7 @@ export class IpfsAnnouncer {
     private blockchainService: BlockchainService,
     private ipfsService: IpfsService,
   ) {
-    this.logger = new Logger(IpfsAnnouncer.name);
+    this.logger = new Logger(BatchAnnouncer.name);
   }
 
   public async announce(batchJob: IBatchAnnouncerJobData): Promise<IPublisherJob> {

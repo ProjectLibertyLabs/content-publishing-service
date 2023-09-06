@@ -17,14 +17,14 @@ import { IpfsService } from './ipfs.client';
 import { ConfigService } from '../../../../apps/api/src/config/config.service';
 
 @Injectable()
-export class IpfsAnnouncer {
+export class BatchAnnouncer {
   private logger: Logger;
 
   constructor(
     private configService: ConfigService,
     private ipfsService: IpfsService,
   ) {
-    this.logger = new Logger(IpfsAnnouncer.name);
+    this.logger = new Logger(BatchAnnouncer.name);
   }
 
   public async prepareNote(noteContent?: any): Promise<[string, string, string]> {

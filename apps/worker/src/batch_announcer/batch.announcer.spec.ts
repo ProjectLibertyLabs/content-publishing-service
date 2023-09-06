@@ -2,7 +2,7 @@ import { expect, describe, jest, it, beforeEach } from '@jest/globals';
 import assert from 'assert';
 import { FrequencyParquetSchema } from '@dsnp/frequency-schemas/types/frequency';
 import Redis from 'ioredis-mock';
-import { IpfsAnnouncer } from './ipfs.announcer';
+import { BatchAnnouncer } from './batch.announcer';
 
 // Create a mock for the dependencies
 const mockConfigService = {
@@ -18,8 +18,8 @@ const mockIpfsService = {
   ipfsPin: jest.fn(),
 };
 
-describe('IpfsAnnouncer', () => {
-  let ipfsAnnouncer: IpfsAnnouncer;
+describe('BatchAnnouncer', () => {
+  let ipfsAnnouncer: BatchAnnouncer;
 
   const broadcast: FrequencyParquetSchema = [
     {
@@ -60,7 +60,7 @@ describe('IpfsAnnouncer', () => {
   const mockClient = new Redis();
 
   beforeEach(async () => {
-    ipfsAnnouncer = new IpfsAnnouncer(mockClient, mockConfigService as any, mockBlockchainService as any, mockIpfsService as any);
+    ipfsAnnouncer = new BatchAnnouncer(mockClient, mockConfigService as any, mockBlockchainService as any, mockIpfsService as any);
   });
   it('should be defined', () => {
     expect(ipfsAnnouncer).toBeDefined();
