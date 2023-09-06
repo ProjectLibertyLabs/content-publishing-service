@@ -778,7 +778,6 @@ describe('AppController E2E request verification!', () => {
       });
       const response = await request(app.getHttpServer()).put(`/api/asset/upload`).attach('files', Buffer.from(buffer), 'file1.jpg').expect(202);
       const assetId = response.body.assetIds[0];
-      console.log(assetId);
       await sleep(2000);
       return request(app.getHttpServer())
         .get(`/api/dev/asset/${assetId}`)
