@@ -6,10 +6,10 @@ import FormData from 'form-data';
 import { extension as getExtension } from 'mime-types';
 import { CID } from 'multiformats/cid';
 import { blake2b256 as hasher } from '@multiformats/blake2/blake2b';
-import { base32 } from 'multiformats/bases/base32';
 import { create } from 'multiformats/hashes/digest';
 import { randomUUID } from 'crypto';
 import { ConfigService } from '../../../../apps/api/src/config/config.service';
+import { base58btc } from 'multiformats/bases/base58';
 
 export interface FilePin {
   cid: string;
@@ -98,7 +98,7 @@ export class IpfsService {
     this.logger.debug(`Hashing file buffer with length: ${fileBuffer.length}`);
     const hashed = await hasher.digest(fileBuffer);
     const hash = create(hasher.code, hashed.bytes);
-    return base32.encode(hash.bytes);
+    return base58btc.encode(hash.bytes);
   }
 
   public ipfsUrl(cid: string): string {
