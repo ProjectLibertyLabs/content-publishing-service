@@ -81,10 +81,6 @@ export class LocationDto {
   @IsOptional()
   @IsEnum(UnitTypeDto)
   units?: UnitTypeDto;
-
-  @IsOptional()
-  @IsString()
-  type?: string = 'Place';
 }
 
 export class AssetReferenceDto {
