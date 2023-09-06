@@ -1,43 +1,38 @@
 import { Injectable, Logger } from '@nestjs/common';
-import { EventEmitter2 } from '@nestjs/event-emitter';
 import { PassThrough } from 'node:stream';
 import { ParquetWriter } from '@dsnp/parquetjs';
 import parquet from '@dsnp/frequency-schemas/parquet';
 import {
-  ActivityContentAttachment,
-  ActivityContentImage,
   ActivityContentImageLink,
-  ActivityContentLink,
-  ActivityContentNote,
+  ActivityContentProfile,
   ActivityContentTag,
+  ActivityContentAttachment,
+  ActivityContentLink,
+  ActivityContentImage,
+  ActivityContentVideoLink,
+  ActivityContentVideo,
+  ActivityContentAudio,
+  ActivityContentAudioLink,
 } from '@dsnp/activity-content/types';
 import { BlockchainService } from '../blockchain/blockchain.service';
 import { ConfigService } from '../../../api/src/config/config.service';
-import {
-  createBroadcast,
-  BroadcastAnnouncement,
-  createNote,
-  ReplyAnnouncement,
-  createReply,
-  createReaction,
-  ReactionAnnouncement,
-  ProfileAnnouncement,
-  createProfile,
-} from '../../../../libs/common/src/interfaces/dsnp';
-import {
-  AnnouncementTypeDto,
-  AttachmentTypeDto,
-  BroadcastDto,
-  ProfileDto,
-  ReactionDto,
-  ReplyDto,
-  TagTypeDto,
-  UpdateAnnouncementTypeDto,
-  UpdateDto,
-} from '../../../../libs/common/src';
 import { IBatchAnnouncerJobData } from '../interfaces/batch-announcer.job.interface';
 import { IPublisherJob } from '../interfaces/publisher-job.interface';
 import { IpfsService } from '../../../../libs/common/src/utils/ipfs.client';
+import { calculateDsnpHash } from '../../../../libs/common/src/utils/ipfs';
+import {
+  AnnouncementTypeDto,
+  BroadcastDto,
+  ReplyDto,
+  ReactionDto,
+  UpdateDto,
+  ProfileDto,
+  UpdateAnnouncementTypeDto,
+  TagTypeDto,
+  AttachmentTypeDto,
+  AssetDto,
+} from '../../../../libs/common/src';
+import { createBroadcast, createReply, createReaction, createNote, createProfile } from '../../../../libs/common/src/interfaces/dsnp';
 
 @Injectable()
 export class IpfsAnnouncer {
@@ -47,7 +42,6 @@ export class IpfsAnnouncer {
     private configService: ConfigService,
     private blockchainService: BlockchainService,
     private ipfsService: IpfsService,
-    private eventEmitter: EventEmitter2,
   ) {
     this.logger = new Logger(IpfsAnnouncer.name);
   }
@@ -69,41 +63,24 @@ export class IpfsAnnouncer {
 
     announcements.forEach(async (announcement) => {
       switch (announcement.announcementType) {
-        case AnnouncementTypeDto.BROADCAST: {
-          const broadcastNote = await this.prepareNoteAndBroadcast(announcement.dsnpUserId, announcement.content as BroadcastDto);
-          await writer.appendRow(broadcastNote);
+        case AnnouncementTypeDto.BROADCAST:
+          await this.processBroadcast(writer, announcement.content as BroadcastDto, announcement.dsnpUserId);
           break;
-        }
-        case AnnouncementTypeDto.REPLY: {
-          const replyNote = await this.prepareNoteAndReply(announcement.dsnpUserId, announcement.content as ReplyDto);
-          await writer.appendRow(replyNote);
+        case AnnouncementTypeDto.REPLY:
+          await this.processReply(writer, announcement.content as ReplyDto, announcement.dsnpUserId);
           break;
-        }
-        case AnnouncementTypeDto.REACTION: {
-          const reactionNote = await this.prepareNoteAndReaction(announcement.dsnpUserId, announcement.content as ReactionDto);
-          await writer.appendRow(reactionNote);
+        case AnnouncementTypeDto.REACTION:
+          await this.processReaction(writer, announcement.content as ReactionDto, announcement.dsnpUserId);
           break;
-        }
-        case AnnouncementTypeDto.UPDATE: {
-          const updateInfo = announcement.content as UpdateDto;
-          if (updateInfo.targetAnnouncementType === UpdateAnnouncementTypeDto.BROADCAST) {
-            const broadcastNote = await this.prepareNoteAndBroadcast(announcement.dsnpUserId, { content: updateInfo.content });
-            await writer.appendRow(broadcastNote);
-          } else if (updateInfo.targetAnnouncementType === UpdateAnnouncementTypeDto.REPLY) {
-            const replyNote = await this.prepareNoteAndReply(announcement.dsnpUserId, { inReplyTo: updateInfo.inReplyTo ?? '', content: updateInfo.content });
-            await writer.appendRow(replyNote);
-          }
+        case AnnouncementTypeDto.UPDATE:
+          await this.processUpdate(writer, announcement.content as UpdateDto, announcement.dsnpUserId);
           break;
-        }
-        case AnnouncementTypeDto.PROFILE: {
-          const profileNote = await this.prepareNoteAndProfile(announcement.dsnpUserId, announcement.content as ProfileDto);
-          await writer.appendRow(profileNote);
+        case AnnouncementTypeDto.PROFILE:
+          await this.processProfile(writer, announcement.content as ProfileDto, announcement.dsnpUserId);
           break;
-        }
-        case AnnouncementTypeDto.TOMBSTONE: {
+        case AnnouncementTypeDto.TOMBSTONE:
           // TODO
           break;
-        }
         default:
           throw new Error(`Unsupported announcement type ${typeof announcement}`);
       }
@@ -118,7 +95,81 @@ export class IpfsAnnouncer {
     return { id: batchId, schemaId, data: { cid, payloadLength: buffer.length } };
   }
 
-  public async bufferPublishStream(publishStream: PassThrough): Promise<Buffer> {
+  private async processBroadcast(writer: ParquetWriter, content: BroadcastDto, dsnpUserId: string): Promise<void> {
+    this.logger.debug(`Processing broadcast`);
+    const [cid, ipfsUrl, hash] = await this.prepareNote(content);
+    const broadcastActivity = createBroadcast(dsnpUserId, ipfsUrl, hash);
+    await writer.appendRow(broadcastActivity);
+  }
+
+  private async processReply(writer: ParquetWriter, content: ReplyDto, dsnpUserId: string): Promise<void> {
+    this.logger.debug(`Processing reply for ${content.inReplyTo}`);
+    const [cid, ipfsUrl, hash] = await this.prepareNote(content);
+    const replyActivity = createReply(dsnpUserId, ipfsUrl, hash, content.inReplyTo);
+    await writer.appendRow(replyActivity);
+  }
+
+  private async processReaction(writer: ParquetWriter, content: ReactionDto, dsnpUserId: string): Promise<void> {
+    this.logger.debug(`Processing reaction ${content.emoji} for ${content.inReplyTo}`);
+    const reactionActivity = await createReaction(dsnpUserId, content.emoji, content.inReplyTo);
+    await writer.appendRow(reactionActivity);
+  }
+
+  private async processUpdate(writer: ParquetWriter, content: UpdateDto, dsnpUserId: string): Promise<void> {
+    this.logger.debug(`Processing update`);
+    if (content.targetAnnouncementType === UpdateAnnouncementTypeDto.BROADCAST) {
+      const [cid, ipfsUrl, hash] = await this.prepareNote(content as BroadcastDto);
+      const broadcastActivity = createBroadcast(dsnpUserId, ipfsUrl, hash);
+      await writer.appendRow(broadcastActivity);
+    } else if (content.targetAnnouncementType === UpdateAnnouncementTypeDto.REPLY) {
+      const [cid, ipfsUrl, hash] = await this.prepareNote(content as ReplyDto);
+      const replyActivity = createReply(dsnpUserId, ipfsUrl, hash, content.inReplyTo ?? '');
+      await writer.appendRow(replyActivity);
+    }
+  }
+
+  private async processProfile(writer: ParquetWriter, content: ProfileDto, dsnpUserId: string): Promise<void> {
+    this.logger.debug(`Processing profile`);
+    const attachments: ActivityContentImageLink[] = [];
+    const icons = content.profile.icon || [];
+    icons.forEach(async (icon) => {
+      const contentBuffer = await this.ipfsService.getPinned(icon.referenceId);
+      const hashedContent = await calculateDsnpHash(contentBuffer);
+      const image: ActivityContentImageLink = {
+        mediaType: 'image', // TODO
+        hash: [hashedContent],
+        height: icon.height,
+        width: icon.width,
+        type: 'Link',
+        href: await this.formIpfsUrl(icon.referenceId),
+      };
+      attachments.push(image);
+    });
+
+    const profileActivity: ActivityContentProfile = {
+      '@context': 'https://www.w3.org/ns/activitystreams',
+      type: 'Profile',
+      name: content.profile.name || '',
+      published: content.profile.published || '',
+      location: {
+        latitude: content.profile.location?.latitude,
+        longitude: content.profile.location?.longitude,
+        radius: content.profile.location?.radius,
+        altitude: content.profile.location?.altitude,
+        accuracy: content.profile.location?.accuracy,
+        name: content.profile.location?.name || '',
+        type: 'Place',
+      },
+      summary: content.profile.summary || '',
+      icon: attachments,
+    };
+    const profileString = JSON.stringify(profileActivity);
+    const [cid, hash] = await this.pinStringToIPFS(Buffer.from(profileString));
+    const profileAnnouncement = createProfile(dsnpUserId, await this.formIpfsUrl(cid), hash);
+    await writer.appendRow(profileAnnouncement);
+  }
+
+  private async bufferPublishStream(publishStream: PassThrough): Promise<Buffer> {
     this.logger.debug('Buffering publish stream');
     return new Promise((resolve, reject) => {
       const buffers: Buffer[] = [];
@@ -134,10 +185,11 @@ export class IpfsAnnouncer {
     });
   }
 
-  public async prepareNoteAndBroadcast(dsnpUserId: string, broadcast?: BroadcastDto): Promise<BroadcastAnnouncement> {
+  public async prepareNote(noteContent?: any): Promise<[string, string, string]> {
+    this.logger.debug(`Preparing note`);
     const tags: ActivityContentTag[] = [];
-    if (broadcast?.content.tag) {
-      broadcast.content.tag.forEach((tag) => {
+    if (noteContent?.content.tag) {
+      noteContent.content.tag.forEach((tag) => {
         switch (tag.type) {
           case TagTypeDto.Hashtag:
             tags.push({ name: tag.name || '' });
@@ -156,9 +208,8 @@ export class IpfsAnnouncer {
     }
 
     const attachments: ActivityContentAttachment[] = [];
-    const notes: ActivityContentNote[] = [];
-    if (broadcast?.content.assets) {
-      broadcast.content.assets.forEach((asset) => {
+    if (noteContent?.content.assets) {
+      noteContent.content.assets.forEach(async (asset: AssetDto) => {
         switch (asset.type) {
           case AttachmentTypeDto.LINK: {
             const link: ActivityContentLink = {
@@ -166,62 +217,110 @@ export class IpfsAnnouncer {
               href: asset.href || '',
               name: asset.name || '',
             };
+
             attachments.push(link);
             break;
           }
-          case AttachmentTypeDto.IMAGE:
-            // TODO
+          case AttachmentTypeDto.IMAGE: {
+            const imageLinks: ActivityContentImageLink[] = [];
+            asset.references?.forEach(async (reference) => {
+              const contentBuffer = await this.ipfsService.getPinned(reference.referenceId);
+              const hashedContent = await calculateDsnpHash(contentBuffer);
+              const image: ActivityContentImageLink = {
+                mediaType: 'image', // TODO
+                hash: [hashedContent],
+                height: reference.height,
+                width: reference.width,
+                type: 'Link',
+                href: await this.formIpfsUrl(reference.referenceId),
+              };
+              imageLinks.push(image);
+            });
+            const imageActivity: ActivityContentImage = {
+              type: 'Image',
+              name: asset.name || '',
+              url: imageLinks,
+            };
+
+            attachments.push(imageActivity);
             break;
-          case AttachmentTypeDto.VIDEO:
-            // TODO
+          }
+          case AttachmentTypeDto.VIDEO: {
+            const videoLinks: ActivityContentVideoLink[] = [];
+            let duration = '';
+            asset.references?.forEach(async (reference) => {
+              const contentBuffer = await this.ipfsService.getPinned(reference.referenceId);
+              const hashedContent = await calculateDsnpHash(contentBuffer);
+              const video: ActivityContentVideoLink = {
+                mediaType: 'video', // TODO
+                hash: [hashedContent],
+                height: reference.height,
+                width: reference.width,
+                type: 'Link',
+                href: await this.formIpfsUrl(reference.referenceId),
+              };
+              duration = reference.duration ?? '';
+              videoLinks.push(video);
+            });
+            const videoActivity: ActivityContentVideo = {
+              type: 'Video',
+              name: asset.name || '',
+              url: videoLinks,
+              duration,
+            };
+
+            attachments.push(videoActivity);
             break;
-          case AttachmentTypeDto.AUDIO:
-            // TODO
+          }
+          case AttachmentTypeDto.AUDIO: {
+            const audioLinks: ActivityContentAudioLink[] = [];
+            let duration = '';
+            asset.references?.forEach(async (reference) => {
+              const contentBuffer = await this.ipfsService.getPinned(reference.referenceId);
+              const hashedContent = await calculateDsnpHash(contentBuffer);
+              duration = reference.duration ?? '';
+              const audio: ActivityContentAudioLink = {
+                mediaType: 'audio', // TODO
+                hash: [hashedContent],
+                type: 'Link',
+                href: await this.formIpfsUrl(reference.referenceId),
+              };
+              audioLinks.push(audio);
+            });
+            const audioActivity: ActivityContentAudio = {
+              type: 'Audio',
+              name: asset.name || '',
+              url: audioLinks,
+              duration,
+            };
+
+            attachments.push(audioActivity);
             break;
+          }
           default:
             throw new Error(`Unsupported attachment type ${typeof asset.type}`);
         }
       });
     }
 
-    const note = createNote(broadcast?.content.content ?? '', new Date(broadcast?.content.published ?? ''), {
-      name: broadcast?.content.name,
+    const note = createNote(noteContent?.content.content ?? '', new Date(noteContent?.content.published ?? ''), {
+      name: noteContent?.content.name,
       location: {
-        latitude: broadcast?.content.location?.latitude,
-        longitude: broadcast?.content.location?.longitude,
-        radius: broadcast?.content.location?.radius,
-        altitude: broadcast?.content.location?.altitude,
-        accuracy: broadcast?.content.location?.accuracy,
-        name: broadcast?.content.location?.name || '',
+        latitude: noteContent?.content.location?.latitude,
+        longitude: noteContent?.content.location?.longitude,
+        radius: noteContent?.content.location?.radius,
+        altitude: noteContent?.content.location?.altitude,
+        accuracy: noteContent?.content.location?.accuracy,
+        name: noteContent?.content.location?.name || '',
         type: 'Place',
       },
       tag: tags,
       attachment: attachments,
     });
-
     const noteString = JSON.stringify(note);
     const [cid, hash] = await this.pinStringToIPFS(Buffer.from(noteString));
     const ipfsUrl = await this.formIpfsUrl(cid);
-    const broadcastActivity = createBroadcast(dsnpUserId, ipfsUrl, hash);
-    return broadcastActivity;
-  }
-
-  public async prepareNoteAndReply(dsnpUserId: string, reply?: ReplyDto): Promise<ReplyAnnouncement> {
-    // TODO
-    this.logger.debug(`Preparing reply for ${dsnpUserId}`);
-    return createReply(dsnpUserId, '', '', '');
-  }
-
-  public async prepareNoteAndReaction(dsnpUserId: string, reaction?: ReactionDto): Promise<ReactionAnnouncement> {
-    // TODO
-    this.logger.debug(`Preparing reaction for ${dsnpUserId}`);
-    return createReaction(dsnpUserId, '', '');
-  }
-
-  public async prepareNoteAndProfile(dsnpUserId: string, profile?: ProfileDto): Promise<ProfileAnnouncement> {
-    // TODO
-    this.logger.debug(`Preparing profile for ${dsnpUserId}`);
-    return createProfile(dsnpUserId, '', '');
+    return [cid, hash, ipfsUrl];
   }
 
   private async pinStringToIPFS(buf: Buffer): Promise<[string, string]> {
