@@ -2,25 +2,11 @@ import { Injectable, Logger } from '@nestjs/common';
 import { PassThrough } from 'node:stream';
 import { ParquetWriter } from '@dsnp/parquetjs';
 import { fromFrequencySchema } from '@dsnp/frequency-schemas/parquet';
-import {
-  ActivityContentImageLink,
-  ActivityContentTag,
-  ActivityContentAttachment,
-  ActivityContentLink,
-  ActivityContentImage,
-  ActivityContentVideoLink,
-  ActivityContentVideo,
-  ActivityContentAudio,
-  ActivityContentAudioLink,
-} from '@dsnp/activity-content/types';
 import { BlockchainService } from '../blockchain/blockchain.service';
 import { ConfigService } from '../../../api/src/config/config.service';
 import { IBatchAnnouncerJobData } from '../interfaces/batch-announcer.job.interface';
 import { IPublisherJob } from '../interfaces/publisher-job.interface';
 import { IpfsService } from '../../../../libs/common/src/utils/ipfs.client';
-import { calculateDsnpHash } from '../../../../libs/common/src/utils/ipfs';
-import { TagTypeDto, AttachmentTypeDto, AssetDto } from '../../../../libs/common/src';
-import { createNote } from '../../../../libs/common/src/interfaces/dsnp';
 
 @Injectable()
 export class IpfsAnnouncer {
