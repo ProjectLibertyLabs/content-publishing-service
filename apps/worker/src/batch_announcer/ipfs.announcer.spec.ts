@@ -1,152 +1,100 @@
-import { describe, it, beforeEach, jest } from '@jest/globals';
+import { Test, TestingModule } from '@nestjs/testing';
+import { expect, describe, jest, it, beforeEach } from '@jest/globals';
+import assert from 'assert';
+import { FrequencyParquetSchema } from '@dsnp/frequency-schemas/types/frequency';
+import { ConfigService } from '../../../api/src/config/config.service';
+import { BlockchainService } from '../blockchain/blockchain.service';
+import { IpfsService } from '../../../../libs/common/src/utils/ipfs.client';
 import { IpfsAnnouncer } from './ipfs.announcer';
-import { IBatchAnnouncerJobData } from '../interfaces/batch-announcer.job.interface';
-import { AnnouncementType } from '../../../../libs/common/src/interfaces/dsnp';
-import { AnnouncementTypeDto } from '../../../../libs/common/src';
-import { assert } from 'console';
 
-describe('IPFSAnnouncer', () => {
+// Create a mock for the dependencies
+const mockConfigService = {
+  getIpfsCidPlaceholder: jest.fn(),
+};
+
+const mockBlockchainService = {
+  getSchema: jest.fn(),
+};
+
+const mockIpfsService = {
+  getPinned: jest.fn(),
+  ipfsPin: jest.fn(),
+};
+
+describe('IpfsAnnouncer', () => {
   let ipfsAnnouncer: IpfsAnnouncer;
-  let configServiceMock: any;
-  let blockchainServiceMock: any;
-  let ipfsServiceMock: any;
 
-  beforeEach(() => {
-    // Initialize mocks for your dependencies
-    configServiceMock = {
-      getIpfsCidPlaceholder: jest.fn(),
-    };
-    blockchainServiceMock = {
-      getSchema: jest.fn(),
-    };
-    ipfsServiceMock = {
-      getPinned: jest.fn(),
-      ipfsPin: jest.fn(),
-    };
+  const broadcast: FrequencyParquetSchema = [
+    {
+      name: 'announcementType',
+      column_type: {
+        INTEGER: {
+          bit_width: 32,
+          sign: true,
+        },
+      },
+      compression: 'GZIP',
+      bloom_filter: false,
+    },
+    {
+      name: 'contentHash',
+      column_type: 'BYTE_ARRAY',
+      compression: 'GZIP',
+      bloom_filter: true,
+    },
+    {
+      name: 'fromId',
+      column_type: {
+        INTEGER: {
+          bit_width: 64,
+          sign: false,
+        },
+      },
+      compression: 'GZIP',
+      bloom_filter: true,
+    },
+    {
+      name: 'url',
+      column_type: 'STRING',
+      compression: 'GZIP',
+      bloom_filter: false,
+    },
+  ];
 
-    // Create an instance of the IpfsAnnouncer with the mock dependencies
-    ipfsAnnouncer = new IpfsAnnouncer(configServiceMock, blockchainServiceMock, ipfsServiceMock);
+  beforeEach(async () => {
+    const module: TestingModule = await Test.createTestingModule({
+      providers: [
+        IpfsAnnouncer,
+        { provide: ConfigService, useValue: mockConfigService },
+        { provide: BlockchainService, useValue: mockBlockchainService },
+        { provide: IpfsService, useValue: mockIpfsService },
+      ],
+    }).compile();
+
+    ipfsAnnouncer = module.get<IpfsAnnouncer>(IpfsAnnouncer);
   });
 
-  describe('announce', () => {
-    it('should announce a batch on IPFS', async () => {
-      // Mock the necessary methods or data to simulate the behavior
-      const batchJobData: IBatchAnnouncerJobData = {
-        batchId: 'batch123',
-        schemaId: 123,
-        announcements: [
-          {
-            id: 'announcement1',
-            dependencyAttempt: 0,
-            announcementType: AnnouncementTypeDto.BROADCAST,
-            dsnpUserId: 'user1',
-            content: {
-              content: {
-                content: 'Hello world!',
-                published: '2021-01-01T00:00:00Z',
-                assets: [],
-              },
-            }
+  it('should be defined', () => {
+    expect(ipfsAnnouncer).toBeDefined();
+  });
 
-          },
-          {
-            id: 'announcement2',
-            dependencyAttempt: 0,
-            announcementType: AnnouncementTypeDto.BROADCAST,
-            dsnpUserId: 'user2',
-            content: {
-              content: {
-                content: 'Hello world!',
-                published: '2021-01-01T00:00:00Z',
-                assets: [],
-              },
-            }
-          },
-        ],
-      };
+  // Write your test cases here
+  it('should announce a batch to IPFS', async () => {
+    // Mock the necessary dependencies' behavior
+    mockConfigService.getIpfsCidPlaceholder.mockReturnValue('mockIpfsUrl');
+    mockBlockchainService.getSchema.mockReturnValue({ model: JSON.stringify(broadcast) });
+    mockIpfsService.getPinned.mockReturnValue(Buffer.from('mockContentBuffer'));
+    mockIpfsService.ipfsPin.mockReturnValue({ cid: 'mockCid', size: 'mockSize' });
 
-      // Mock blockchainService's getSchema method
-      blockchainServiceMock.getSchema.mockResolvedValue({
-        model: JSON.stringify({
-          $schema: 'http://json-schema.org/draft-07/schema#',
-          $id: 'https://dsnp.org/schemas/1.0/Announcement.json',
-          title: 'Announcement',
-          type: 'object',
-          properties: {
-            id: {
-              type: 'string',
-              format: 'uri',
-            },
-            announcementType: {
-              type: 'string',
-              enum: [
-                'broadcast',
-                'reply',
-                'reaction',
-                'update',
-                'profile',
-              ],
-            },
-            dsnpUserId: {
-              type: 'string',
-              format: 'uri',
-            },
-            content: {
-              type: 'object',
-              properties: {
-                content: {
-                  type: 'object',
-                  properties: {
-                    content: {
-                      type: 'string',
-                    },
-                    published: {
-                      type: 'string',
-                      format: 'date-time',
-                    },
-                    assets: {
-                      type: 'array',
-                      items: {
-                        type: 'object',
-                        properties: {
-                          type: {
-                            type: 'string',
-                            enum: [
-                              'image',
-                              'video',
-                              'audio',
-                              'document',
-                              'link',
-                            ],
-                          },
-                        },
-                      },
-                    },
-                  },
-                },
-              },
-            },
-          },
-        }),
-      });
-      // Mock configService's getIpfsCidPlaceholder method
-      configServiceMock.getIpfsCidPlaceholder.mockReturnValue('ipfs://mocked-cid');
+    const batchJob = {
+      batchId: 'mockBatchId',
+      schemaId: 123,
+      announcements: [],
+    };
 
-      // Mock ipfsService's methods if needed
-      // ipfsServiceMock.getPinned.mockResolvedValue(/* Mock IPFS data */);
-      // ipfsServiceMock.ipfsPin.mockResolvedValue({ cid: 'mocked-cid', size: 'mocked-size' });
-
-      // Call the announce method
-      const result = await ipfsAnnouncer.announce(batchJobData);
-      assert(result);
-
-      // Verify that the mock methods were called as expected
-      expect(blockchainServiceMock.getSchema).toHaveBeenCalledWith(123);
-      expect(configServiceMock.getIpfsCidPlaceholder).toHaveBeenCalledWith('mocked-cid');
-      // Add more expectations as needed for your specific code
-
-      // Clean up or reset any mocks if necessary
-      jest.clearAllMocks();
-    });
+    const result = await ipfsAnnouncer.announce(batchJob);
+    assert(result);
+    expect(mockConfigService.getIpfsCidPlaceholder).toHaveBeenCalledWith('mockCid');
+    expect(mockBlockchainService.getSchema).toHaveBeenCalledWith(123);
   });
 });
