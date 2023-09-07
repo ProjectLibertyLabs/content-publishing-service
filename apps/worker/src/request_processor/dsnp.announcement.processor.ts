@@ -65,42 +65,46 @@ export class DsnpAnnouncementProcessor {
   public async collectAnnouncementAndQueue(data: IRequestJob) {
     this.logger.debug(`Collecting announcement and queueing`);
     this.logger.verbose(`Processing Acitivity: ${data.announcementType} for ${data.dsnpUserId}`);
-
-    switch (data.announcementType) {
-      case AnnouncementTypeDto.BROADCAST: {
-        const broadcast = await this.processBroadcast(data.content as BroadcastDto, data.dsnpUserId);
-        await this.broadcastQueue.add(`Broadcast Job - ${data.id}`, broadcast, { jobId: data.id, removeOnFail: false, removeOnComplete: 2000 });
-        break;
+    try {
+      switch (data.announcementType) {
+        case AnnouncementTypeDto.BROADCAST: {
+          const broadcast = await this.processBroadcast(data.content as BroadcastDto, data.dsnpUserId);
+          await this.broadcastQueue.add(`Broadcast Job - ${data.id}`, broadcast, { jobId: data.id, removeOnFail: false, removeOnComplete: 2000 });
+          break;
+        }
+        case AnnouncementTypeDto.REPLY: {
+          const reply = await this.processReply(data.content as ReplyDto, data.dsnpUserId);
+          await this.replyQueue.add(`Reply Job - ${data.id}`, reply, { jobId: data.id, removeOnFail: false, removeOnComplete: 2000 });
+          break;
+        }
+        case AnnouncementTypeDto.REACTION: {
+          const reaction = await this.processReaction(data.content as ReactionDto, data.dsnpUserId);
+          await this.reactionQueue.add(`Reaction Job - ${data.id}`, reaction, { jobId: data.id, removeOnFail: false, removeOnComplete: 2000 });
+          break;
+        }
+        case AnnouncementTypeDto.UPDATE: {
+          const updateDto = data.content as UpdateDto;
+          const updateAnnoucementType: AnnouncementType =
+            updateDto.targetAnnouncementType === UpdateAnnouncementTypeDto.BROADCAST ? AnnouncementType.Broadcast : AnnouncementType.Reply;
+          const update = await this.processUpdate(updateDto, updateAnnoucementType, data.targetContentHash ?? '', data.dsnpUserId);
+          await this.updateQueue.add(`Update Job - ${data.id}`, update, { jobId: data.id, removeOnFail: false, removeOnComplete: 2000 });
+          break;
+        }
+        case AnnouncementTypeDto.PROFILE: {
+          const profile = await this.processProfile(data.content as ProfileDto, data.dsnpUserId);
+          await this.profileQueue.add(`Profile Job - ${data.id}`, profile, { jobId: data.id, removeOnFail: false, removeOnComplete: 2000 });
+          break;
+        }
+        case AnnouncementTypeDto.TOMBSTONE: {
+          await this.tombstoneQueue.add(`Tombstone Job - ${data.id}`, data, { jobId: data.id, removeOnFail: false, removeOnComplete: 2000 });
+          break;
+        }
+        default:
+          throw new Error(`Unsupported announcement type ${typeof data.announcementType}`);
       }
-      case AnnouncementTypeDto.REPLY: {
-        const reply = await this.processReply(data.content as ReplyDto, data.dsnpUserId);
-        await this.replyQueue.add(`Reply Job - ${data.id}`, reply, { jobId: data.id, removeOnFail: false, removeOnComplete: 2000 });
-        break;
-      }
-      case AnnouncementTypeDto.REACTION: {
-        const reaction = await this.processReaction(data.content as ReactionDto, data.dsnpUserId);
-        await this.reactionQueue.add(`Reaction Job - ${data.id}`, reaction, { jobId: data.id, removeOnFail: false, removeOnComplete: 2000 });
-        break;
-      }
-      case AnnouncementTypeDto.UPDATE: {
-        const updateDto = data.content as UpdateDto;
-        const updateAnnoucementType: AnnouncementType =
-          updateDto.targetAnnouncementType === UpdateAnnouncementTypeDto.BROADCAST ? AnnouncementType.Broadcast : AnnouncementType.Reply;
-        const update = await this.processUpdate(updateDto, updateAnnoucementType, data.targetContentHash ?? '', data.dsnpUserId);
-        await this.updateQueue.add(`Update Job - ${data.id}`, update, { jobId: data.id, removeOnFail: false, removeOnComplete: 2000 });
-        break;
-      }
-      case AnnouncementTypeDto.PROFILE: {
-        const profile = await this.processProfile(data.content as ProfileDto, data.dsnpUserId);
-        await this.profileQueue.add(`Profile Job - ${data.id}`, profile, { jobId: data.id, removeOnFail: false, removeOnComplete: 2000 });
-        break;
-      }
-      case AnnouncementTypeDto.TOMBSTONE: {
-        await this.tombstoneQueue.add(`Tombstone Job - ${data.id}`, data, { jobId: data.id, removeOnFail: false, removeOnComplete: 2000 });
-        break;
-      }
-      default:
-        throw new Error(`Unsupported announcement type ${typeof data.announcementType}`);
+    } catch (e) {
+      this.logger.error(`Error processing announcement ${data.announcementType} for ${data.dsnpUserId}: ${e}`);
+      throw e;
     }
   }
 
