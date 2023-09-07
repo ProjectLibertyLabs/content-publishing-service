@@ -6,6 +6,8 @@ export interface IRequestJob {
   announcementType: AnnouncementTypeDto;
   dsnpUserId: string;
   targetContentHash?: string;
+  // TODO: Remove this once we have a better way to handle this
+  targetAnnouncementType?: AnnouncementTypeDto;
   content?: RequestTypeDto;
   dependencyAttempt: number;
 }

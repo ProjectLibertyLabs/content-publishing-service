@@ -42,6 +42,7 @@ import {
   createProfile,
   createReaction,
   createReply,
+  createTombstone,
   createUpdate,
 } from '../../../../libs/common/src/interfaces/dsnp';
 
@@ -96,7 +97,34 @@ export class DsnpAnnouncementProcessor {
           break;
         }
         case AnnouncementTypeDto.TOMBSTONE: {
-          await this.tombstoneQueue.add(`Tombstone Job - ${data.id}`, data, { jobId: data.id, removeOnFail: false, removeOnComplete: 2000 });
+          let targetAnnouncementType: AnnouncementType;
+          switch (data.targetAnnouncementType) {
+            case AnnouncementTypeDto.BROADCAST: {
+              targetAnnouncementType = AnnouncementType.Broadcast;
+              break;
+            }
+            case AnnouncementTypeDto.REPLY: {
+              targetAnnouncementType = AnnouncementType.Reply;
+              break;
+            }
+            case AnnouncementTypeDto.PROFILE: {
+              targetAnnouncementType = AnnouncementType.Profile;
+              break;
+            }
+            case AnnouncementTypeDto.REACTION: {
+              targetAnnouncementType = AnnouncementType.Reaction;
+              break;
+            }
+            case AnnouncementTypeDto.UPDATE: {
+              targetAnnouncementType = AnnouncementType.Update;
+              break;
+            }
+            default:
+              throw new Error(`Unsupported target announcement type ${typeof data.targetAnnouncementType}`);
+          }
+          const announcementType: AnnouncementType = targetAnnouncementType;
+          const tombstone = createTombstone(data.dsnpUserId, announcementType, data.targetContentHash ?? '');
+          await this.tombstoneQueue.add(`Tombstone Job - ${data.id}`, tombstone, { jobId: data.id, removeOnFail: false, removeOnComplete: 2000 });
           break;
         }
         default:

@@ -18,7 +18,7 @@ export enum AnnouncementType {
 type TombstoneFields = {
   announcementType: AnnouncementType.Tombstone;
   targetAnnouncementType: AnnouncementType;
-  targetSignature: string;
+  targetContentHash: string;
 };
 
 type BroadcastFields = {
@@ -105,10 +105,10 @@ export type UpdateAnnouncement = TypedAnnouncement<AnnouncementType.Update>;
  * @param targetSignature - The signature of the target announcement
  * @returns A TombstoneAnnouncement
  */
-export const createTombstone = (fromId: string, targetType: AnnouncementType, targetSignature: string): TombstoneAnnouncement => ({
+export const createTombstone = (fromId: string, targetType: AnnouncementType, targetContentHash: string): TombstoneAnnouncement => ({
   announcementType: AnnouncementType.Tombstone,
   targetAnnouncementType: targetType,
-  targetSignature,
+  targetContentHash,
   fromId,
 });
 
