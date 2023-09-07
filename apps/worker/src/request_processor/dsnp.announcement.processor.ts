@@ -1,4 +1,3 @@
-import { Injectable, Logger } from '@nestjs/common';
 import {
   ActivityContentTag,
   ActivityContentAttachment,
@@ -9,22 +8,50 @@ import {
   ActivityContentVideo,
   ActivityContentAudioLink,
   ActivityContentAudio,
+  ActivityContentProfile,
 } from '@dsnp/activity-content/types';
-import { TagTypeDto, AssetDto, AttachmentTypeDto } from '../dtos/activity.dto';
-import { createNote } from '../interfaces/dsnp';
-import { calculateDsnpHash } from './ipfs';
-import { IpfsService } from './ipfs.client';
-import { ConfigService } from '../../../../apps/api/src/config/config.service';
+import { Injectable, Logger } from '@nestjs/common';
+import { InjectQueue } from '@nestjs/bullmq';
+import { Queue } from 'bullmq';
+import { TagTypeDto, AssetDto, AttachmentTypeDto, IRequestJob, QueueConstants, BroadcastDto, ProfileDto, ReactionDto, ReplyDto, UpdateDto } from '../../../../libs/common/src';
+import { IpfsService } from '../../../../libs/common/src/utils/ipfs.client';
+import { ConfigService } from '../../../api/src/config/config.service';
+import { calculateDsnpHash } from '../../../../libs/common/src/utils/ipfs';
+import {
+  AnnouncementType,
+  BroadcastAnnouncement,
+  ProfileAnnouncement,
+  ReactionAnnouncement,
+  ReplyAnnouncement,
+  UpdateAnnouncement,
+  createBroadcast,
+  createNote,
+  createProfile,
+  createReaction,
+  createReply,
+  createUpdate,
+} from '../../../../libs/common/src/interfaces/dsnp';
 
 @Injectable()
-export class BatchAnnouncer {
+export class DsnpAnnouncementProcessor {
   private logger: Logger;
 
   constructor(
+    @InjectQueue(QueueConstants.BROADCAST_QUEUE_NAME) private broadcastQueue: Queue,
+    @InjectQueue(QueueConstants.REPLY_QUEUE_NAME) private replyQueue: Queue,
+    @InjectQueue(QueueConstants.REACTION_QUEUE_NAME) private reactionQueue: Queue,
+    @InjectQueue(QueueConstants.UPDATE_QUEUE_NAME) private updateQueue: Queue,
+    @InjectQueue(QueueConstants.PROFILE_QUEUE_NAME) private profileQueue: Queue,
+    @InjectQueue(QueueConstants.TOMBSTONE_QUEUE_NAME) private tombstoneQueue: Queue,
     private configService: ConfigService,
     private ipfsService: IpfsService,
   ) {
-    this.logger = new Logger(BatchAnnouncer.name);
+    this.logger = new Logger(DsnpAnnouncementProcessor.name);
+  }
+
+  public async collectAnnouncementAndQueue(data: IRequestJob) {
+    this.logger.debug(`Collecting announcement and queueing`);
+    this.logger.verbose(`Processing Acitivity: ${data.announcementType} for ${data.dsnpUserId}`);
   }
 
   public async prepareNote(noteContent?: any): Promise<[string, string, string]> {
@@ -69,7 +96,7 @@ export class BatchAnnouncer {
               const contentBuffer = await this.ipfsService.getPinned(reference.referenceId);
               const hashedContent = await calculateDsnpHash(contentBuffer);
               const image: ActivityContentImageLink = {
-                mediaType: 'image', // TODO
+                mediaType: reference.mimeType,
                 hash: [hashedContent],
                 height: reference.height,
                 width: reference.width,
@@ -94,14 +121,14 @@ export class BatchAnnouncer {
               const contentBuffer = await this.ipfsService.getPinned(reference.referenceId);
               const hashedContent = await calculateDsnpHash(contentBuffer);
               const video: ActivityContentVideoLink = {
-                mediaType: 'video', // TODO
+                mediaType: reference.mimeType,
                 hash: [hashedContent],
                 height: reference.height,
                 width: reference.width,
                 type: 'Link',
                 href: await this.formIpfsUrl(reference.referenceId),
               };
-              duration = reference.duration ?? '';
+              duration = duration ?? reference.duration ?? '';
               videoLinks.push(video);
             });
             const videoActivity: ActivityContentVideo = {
@@ -120,9 +147,9 @@ export class BatchAnnouncer {
             asset.references?.forEach(async (reference) => {
               const contentBuffer = await this.ipfsService.getPinned(reference.referenceId);
               const hashedContent = await calculateDsnpHash(contentBuffer);
-              duration = reference.duration ?? '';
+              duration = duration ?? reference.duration ?? '';
               const audio: ActivityContentAudioLink = {
-                mediaType: 'audio', // TODO
+                mediaType: reference.mimeType,
                 hash: [hashedContent],
                 type: 'Link',
                 href: await this.formIpfsUrl(reference.referenceId),
@@ -160,14 +187,77 @@ export class BatchAnnouncer {
       attachment: attachments,
     });
     const noteString = JSON.stringify(note);
-    const [cid, hash] = await this.pinStringToIPFS(Buffer.from(noteString));
+    const [cid, hash] = await this.pinBufferToIPFS(Buffer.from(noteString));
     const ipfsUrl = await this.formIpfsUrl(cid);
     return [cid, hash, ipfsUrl];
   }
 
-  private async pinStringToIPFS(buf: Buffer): Promise<[string, string]> {
-    const { cid, size } = await this.ipfsService.ipfsPin('application/octet-stream', buf);
-    return [cid.toString(), size.toString()];
+  private async processBroadcast(content: BroadcastDto, dsnpUserId: string): Promise<BroadcastAnnouncement> {
+    this.logger.debug(`Processing broadcast`);
+    const [cid, ipfsUrl, hash] = await this.prepareNote(content);
+    return createBroadcast(dsnpUserId, ipfsUrl, hash);
+  }
+
+  private async processReply(content: ReplyDto, dsnpUserId: string): Promise<ReplyAnnouncement> {
+    this.logger.debug(`Processing reply for ${content.inReplyTo}`);
+    const [cid, ipfsUrl, hash] = await this.prepareNote(content);
+    return createReply(dsnpUserId, ipfsUrl, hash, content.inReplyTo);
+  }
+
+  private async processReaction(content: ReactionDto, dsnpUserId: string): Promise<ReactionAnnouncement> {
+    this.logger.debug(`Processing reaction ${content.emoji} for ${content.inReplyTo}`);
+    return createReaction(dsnpUserId, content.emoji, content.inReplyTo);
+  }
+
+  private async processUpdate(content: UpdateDto, targetAnnouncementType: AnnouncementType, targetContentHash: string, dsnpUserId: string): Promise<UpdateAnnouncement> {
+    this.logger.debug(`Processing update`);
+    const [cid, ipfsUrl, hash] = await this.prepareNote(content);
+    return createUpdate(dsnpUserId, ipfsUrl, hash, targetAnnouncementType, targetContentHash);
+  }
+
+  private async processProfile(content: ProfileDto, dsnpUserId: string): Promise<ProfileAnnouncement> {
+    this.logger.debug(`Processing profile`);
+    const attachments: ActivityContentImageLink[] = [];
+    const icons = content.profile.icon || [];
+    icons.forEach(async (icon) => {
+      const contentBuffer = await this.ipfsService.getPinned(icon.referenceId);
+      const hashedContent = await calculateDsnpHash(contentBuffer);
+      const image: ActivityContentImageLink = {
+        mediaType: icon.mimeType,
+        hash: [hashedContent],
+        height: icon.height,
+        width: icon.width,
+        type: 'Link',
+        href: await this.formIpfsUrl(icon.referenceId),
+      };
+      attachments.push(image);
+    });
+
+    const profileActivity: ActivityContentProfile = {
+      '@context': 'https://www.w3.org/ns/activitystreams',
+      type: 'Profile',
+      name: content.profile.name || '',
+      published: content.profile.published || '',
+      location: {
+        latitude: content.profile.location?.latitude,
+        longitude: content.profile.location?.longitude,
+        radius: content.profile.location?.radius,
+        altitude: content.profile.location?.altitude,
+        accuracy: content.profile.location?.accuracy,
+        name: content.profile.location?.name || '',
+        type: 'Place',
+      },
+      summary: content.profile.summary || '',
+      icon: attachments,
+    };
+    const profileString = JSON.stringify(profileActivity);
+    const [cid, hash] = await this.pinBufferToIPFS(Buffer.from(profileString));
+    return createProfile(dsnpUserId, await this.formIpfsUrl(cid), hash);
+  }
+
+  private async pinBufferToIPFS(buf: Buffer): Promise<[string, string, number]> {
+    const { cid, hash, size } = await this.ipfsService.ipfsPin('application/octet-stream', buf);
+    return [cid.toString(), hash, size];
   }
 
   private async formIpfsUrl(cid: string): Promise<string> {

@@ -9,6 +9,7 @@ import {
   IsEnum,
   IsLatitude,
   IsLongitude,
+  IsMimeType,
   IsNumber,
   IsOptional,
   IsPositive,
@@ -87,6 +88,9 @@ export class AssetReferenceDto {
   @MinLength(1)
   @IsString()
   referenceId: string;
+
+  @IsMimeType()
+  mimeType: string;
 
   @IsOptional()
   @IsNumber()
