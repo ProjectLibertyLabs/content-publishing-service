@@ -25,7 +25,8 @@ import {
   ReplyDto,
   UpdateDto,
   AnnouncementTypeDto,
-  UpdateAnnouncementTypeDto,
+  TombstoneDto,
+  ModifiableAnnouncementTypeDto,
 } from '../../../../libs/common/src';
 import { IpfsService } from '../../../../libs/common/src/utils/ipfs.client';
 import { ConfigService } from '../../../api/src/config/config.service';
@@ -86,8 +87,8 @@ export class DsnpAnnouncementProcessor {
         case AnnouncementTypeDto.UPDATE: {
           const updateDto = data.content as UpdateDto;
           const updateAnnoucementType: AnnouncementType =
-            updateDto.targetAnnouncementType === UpdateAnnouncementTypeDto.BROADCAST ? AnnouncementType.Broadcast : AnnouncementType.Reply;
-          const update = await this.processUpdate(updateDto, updateAnnoucementType, data.targetContentHash ?? '', data.dsnpUserId);
+            updateDto.targetAnnouncementType === ModifiableAnnouncementTypeDto.BROADCAST ? AnnouncementType.Broadcast : AnnouncementType.Reply;
+          const update = await this.processUpdate(updateDto, updateAnnoucementType, updateDto.targetContentHash ?? '', data.dsnpUserId);
           await this.updateQueue.add(`Update Job - ${data.id}`, update, { jobId: data.id, removeOnFail: false, removeOnComplete: 2000 });
           break;
         }
@@ -97,33 +98,22 @@ export class DsnpAnnouncementProcessor {
           break;
         }
         case AnnouncementTypeDto.TOMBSTONE: {
+          const tombStoneDto = data.content as TombstoneDto;
           let targetAnnouncementType: AnnouncementType;
-          switch (data.targetAnnouncementType) {
-            case AnnouncementTypeDto.BROADCAST: {
+          switch (tombStoneDto.targetAnnouncementType) {
+            case ModifiableAnnouncementTypeDto.BROADCAST: {
               targetAnnouncementType = AnnouncementType.Broadcast;
               break;
             }
-            case AnnouncementTypeDto.REPLY: {
+            case ModifiableAnnouncementTypeDto.REPLY: {
               targetAnnouncementType = AnnouncementType.Reply;
               break;
             }
-            case AnnouncementTypeDto.PROFILE: {
-              targetAnnouncementType = AnnouncementType.Profile;
-              break;
-            }
-            case AnnouncementTypeDto.REACTION: {
-              targetAnnouncementType = AnnouncementType.Reaction;
-              break;
-            }
-            case AnnouncementTypeDto.UPDATE: {
-              targetAnnouncementType = AnnouncementType.Update;
-              break;
-            }
             default:
-              throw new Error(`Unsupported target announcement type ${typeof data.targetAnnouncementType}`);
+              throw new Error(`Unsupported target announcement type ${typeof tombStoneDto.targetAnnouncementType}`);
           }
           const announcementType: AnnouncementType = targetAnnouncementType;
-          const tombstone = createTombstone(data.dsnpUserId, announcementType, data.targetContentHash ?? '');
+          const tombstone = createTombstone(data.dsnpUserId, announcementType, tombStoneDto.targetContentHash ?? '');
           await this.tombstoneQueue.add(`Tombstone Job - ${data.id}`, tombstone, { jobId: data.id, removeOnFail: false, removeOnComplete: 2000 });
           break;
         }
