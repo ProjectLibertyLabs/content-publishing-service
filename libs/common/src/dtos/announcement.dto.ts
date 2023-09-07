@@ -5,7 +5,7 @@
 import { IsEnum, IsHexadecimal, IsInt, IsNotEmpty, IsString, Matches, Max, MaxLength, Min, MinLength, ValidateNested } from 'class-validator';
 import { Type } from 'class-transformer';
 import { NoteActivityDto, ProfileActivityDto } from './activity.dto';
-import { DSNP_CONTENT_URI_REGEX, DSNP_EMOJI_REGEX } from './validation.dto';
+import { DSNP_CONTENT_HASH_REGEX, DSNP_CONTENT_URI_REGEX, DSNP_EMOJI_REGEX } from './validation.dto';
 
 // eslint-disable-next-line no-shadow
 export enum ModifiableAnnouncementTypeDto {
@@ -34,7 +34,7 @@ export class ReplyDto {
 export class TombstoneDto {
   @IsString()
   @IsNotEmpty()
-  @IsHexadecimal({ message: 'targetContentHash must be in hexadecimal format!' })
+  @Matches(DSNP_CONTENT_HASH_REGEX, { message: 'targetContentHash must be in hexadecimal format!' })
   targetContentHash: string;
 
   @IsEnum(ModifiableAnnouncementTypeDto)
@@ -44,7 +44,7 @@ export class TombstoneDto {
 export class UpdateDto {
   @IsString()
   @IsNotEmpty()
-  @IsHexadecimal({ message: 'targetContentHash must be in hexadecimal format!' })
+  @Matches(DSNP_CONTENT_HASH_REGEX, { message: 'targetContentHash must be in hexadecimal format!' })
   targetContentHash: string;
 
   @IsEnum(ModifiableAnnouncementTypeDto)
