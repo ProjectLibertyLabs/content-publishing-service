@@ -12,8 +12,7 @@ import {
 } from '@dsnp/activity-content/types';
 import { Injectable, Logger } from '@nestjs/common';
 import { InjectQueue } from '@nestjs/bullmq';
-import { Job, Queue } from 'bullmq';
-import { assets } from '@polkadot/types/interfaces/definitions';
+import { Queue } from 'bullmq';
 import {
   TagTypeDto,
   AssetDto,
@@ -47,7 +46,6 @@ import {
   createTombstone,
   createUpdate,
 } from '../../../../libs/common/src/interfaces/dsnp';
-import { IAssetJob } from '../../../../libs/common/src/interfaces/asset-job.interface';
 
 @Injectable()
 export class DsnpAnnouncementProcessor {
