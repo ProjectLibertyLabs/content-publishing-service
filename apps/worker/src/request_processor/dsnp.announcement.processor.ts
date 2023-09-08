@@ -332,6 +332,7 @@ export class DsnpAnnouncementProcessor {
       location: this.prepareLocation(content.profile.location),
       summary: content.profile.summary,
       icon: attachments,
+      tag: this.prepareTags(content.profile.tag),
     };
     const profileString = JSON.stringify(profileActivity);
     const [cid, hash] = await this.pinBufferToIPFS(Buffer.from(profileString));
