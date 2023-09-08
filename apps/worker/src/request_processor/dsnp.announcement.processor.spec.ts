@@ -32,7 +32,7 @@ describe('DsnpAnnouncementProcessor', () => {
         { provide: ConfigService, useValue: mockConfigService },
         { provide: IpfsService, useValue: mockIpfsService },
         { provide: Queue, useValue: mockQueue },
-        { provide: 'BullQueue_assetQueue', useValue: mockQueue},
+        { provide: 'BullQueue_assetQueue', useValue: mockQueue },
         { provide: 'BullQueue_broadcastQueue', useValue: mockQueue },
         { provide: 'BullQueue_replyQueue', useValue: mockQueue },
         { provide: 'BullQueue_reactionQueue', useValue: mockQueue },

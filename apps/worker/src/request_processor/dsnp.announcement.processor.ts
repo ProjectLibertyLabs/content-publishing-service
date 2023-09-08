@@ -135,11 +135,11 @@ export class DsnpAnnouncementProcessor {
       noteContent.content.tag.forEach((tag) => {
         switch (tag.type) {
           case TagTypeDto.Hashtag:
-            tags.push({ name: tag.name || '' });
+            tags.push({ name: tag.name });
             break;
           case TagTypeDto.Mention:
             tags.push({
-              name: tag.name || '',
+              name: tag.name,
               type: 'Mention',
               id: tag.mentionedId || '',
             });
