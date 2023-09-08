@@ -13,6 +13,7 @@ import {
 import { Injectable, Logger } from '@nestjs/common';
 import { InjectQueue } from '@nestjs/bullmq';
 import { Job, Queue } from 'bullmq';
+import { assets } from '@polkadot/types/interfaces/definitions';
 import {
   TagTypeDto,
   AssetDto,
@@ -67,58 +68,28 @@ export class DsnpAnnouncementProcessor {
   }
 
   public async collectAnnouncementAndQueue(data: IRequestJob) {
-    this.logger.debug(`Collecting announcement and queueing`);
-    this.logger.verbose(`Processing Acitivity: ${data.announcementType} for ${data.dsnpUserId}`);
+    this.logger.debug(`Collecting announcement and queuing`);
+    this.logger.verbose(`Processing Activity: ${data.announcementType} for ${data.dsnpUserId}`);
     try {
       switch (data.announcementType) {
-        case AnnouncementTypeDto.BROADCAST: {
-          const broadcast = await this.processBroadcast(data.content as BroadcastDto, data.dsnpUserId);
-          await this.broadcastQueue.add(`Broadcast Job - ${data.id}`, broadcast, { jobId: data.id, removeOnFail: false, removeOnComplete: 2000 });
+        case AnnouncementTypeDto.BROADCAST:
+          await this.queueBroadcast(data);
           break;
-        }
-        case AnnouncementTypeDto.REPLY: {
-          const reply = await this.processReply(data.content as ReplyDto, data.dsnpUserId);
-          await this.replyQueue.add(`Reply Job - ${data.id}`, reply, { jobId: data.id, removeOnFail: false, removeOnComplete: 2000 });
+        case AnnouncementTypeDto.REPLY:
+          await this.queueReply(data);
           break;
-        }
-        case AnnouncementTypeDto.REACTION: {
-          const reaction = await this.processReaction(data.content as ReactionDto, data.dsnpUserId);
-          await this.reactionQueue.add(`Reaction Job - ${data.id}`, reaction, { jobId: data.id, removeOnFail: false, removeOnComplete: 2000 });
+        case AnnouncementTypeDto.REACTION:
+          await this.queueReaction(data);
           break;
-        }
-        case AnnouncementTypeDto.UPDATE: {
-          const updateDto = data.content as UpdateDto;
-          const updateAnnoucementType: AnnouncementType =
-            updateDto.targetAnnouncementType === ModifiableAnnouncementTypeDto.BROADCAST ? AnnouncementType.Broadcast : AnnouncementType.Reply;
-          const update = await this.processUpdate(updateDto, updateAnnoucementType, updateDto.targetContentHash ?? '', data.dsnpUserId);
-          await this.updateQueue.add(`Update Job - ${data.id}`, update, { jobId: data.id, removeOnFail: false, removeOnComplete: 2000 });
+        case AnnouncementTypeDto.UPDATE:
+          await this.queueUpdate(data);
           break;
-        }
-        case AnnouncementTypeDto.PROFILE: {
-          const profile = await this.processProfile(data.content as ProfileDto, data.dsnpUserId);
-          await this.profileQueue.add(`Profile Job - ${data.id}`, profile, { jobId: data.id, removeOnFail: false, removeOnComplete: 2000 });
+        case AnnouncementTypeDto.PROFILE:
+          await this.queueProfile(data);
           break;
-        }
-        case AnnouncementTypeDto.TOMBSTONE: {
-          const tombStoneDto = data.content as TombstoneDto;
-          let targetAnnouncementType: AnnouncementType;
-          switch (tombStoneDto.targetAnnouncementType) {
-            case ModifiableAnnouncementTypeDto.BROADCAST: {
-              targetAnnouncementType = AnnouncementType.Broadcast;
-              break;
-            }
-            case ModifiableAnnouncementTypeDto.REPLY: {
-              targetAnnouncementType = AnnouncementType.Reply;
-              break;
-            }
-            default:
-              throw new Error(`Unsupported target announcement type ${typeof tombStoneDto.targetAnnouncementType}`);
-          }
-          const announcementType: AnnouncementType = targetAnnouncementType;
-          const tombstone = createTombstone(data.dsnpUserId, announcementType, tombStoneDto.targetContentHash ?? '');
-          await this.tombstoneQueue.add(`Tombstone Job - ${data.id}`, tombstone, { jobId: data.id, removeOnFail: false, removeOnComplete: 2000 });
+        case AnnouncementTypeDto.TOMBSTONE:
+          await this.queueTombstone(data);
           break;
-        }
         default:
           throw new Error(`Unsupported announcement type ${typeof data.announcementType}`);
       }
@@ -128,11 +99,74 @@ export class DsnpAnnouncementProcessor {
     }
   }
 
+  private async queueBroadcast(data: IRequestJob) {
+    const broadcast = await this.processBroadcast(data.content as BroadcastDto, data.dsnpUserId);
+    await this.broadcastQueue.add(`Broadcast Job - ${data.id}`, broadcast, { jobId: data.id, removeOnFail: false, removeOnComplete: 2000 });
+  }
+
+  private async queueReply(data: IRequestJob) {
+    const reply = await this.processReply(data.content as ReplyDto, data.dsnpUserId);
+    await this.replyQueue.add(`Reply Job - ${data.id}`, reply, { jobId: data.id, removeOnFail: false, removeOnComplete: 2000 });
+  }
+
+  private async queueReaction(data: IRequestJob) {
+    const reaction = await this.processReaction(data.content as ReactionDto, data.dsnpUserId);
+    await this.reactionQueue.add(`Reaction Job - ${data.id}`, reaction, { jobId: data.id, removeOnFail: false, removeOnComplete: 2000 });
+  }
+
+  private async queueUpdate(data: IRequestJob) {
+    const updateDto = data.content as UpdateDto;
+    const updateAnnouncementType: AnnouncementType = await this.getAnnouncementTypeFromModifiableAnnouncementType(updateDto.targetAnnouncementType);
+    const update = await this.processUpdate(updateDto, updateAnnouncementType, updateDto.targetContentHash ?? '', data.dsnpUserId);
+    await this.updateQueue.add(`Update Job - ${data.id}`, update, { jobId: data.id, removeOnFail: false, removeOnComplete: 2000 });
+  }
+
+  private async queueProfile(data: IRequestJob) {
+    const profile = await this.processProfile(data.content as ProfileDto, data.dsnpUserId);
+    await this.profileQueue.add(`Profile Job - ${data.id}`, profile, { jobId: data.id, removeOnFail: false, removeOnComplete: 2000 });
+  }
+
+  private async queueTombstone(data: IRequestJob) {
+    const tombStoneDto = data.content as TombstoneDto;
+    const announcementType: AnnouncementType = await this.getAnnouncementTypeFromModifiableAnnouncementType(tombStoneDto.targetAnnouncementType);
+    const tombstone = createTombstone(data.dsnpUserId, announcementType, tombStoneDto.targetContentHash ?? '');
+    await this.tombstoneQueue.add(`Tombstone Job - ${data.id}`, tombstone, { jobId: data.id, removeOnFail: false, removeOnComplete: 2000 });
+  }
+
+  private async getAnnouncementTypeFromModifiableAnnouncementType(modifiableAnnouncementType: ModifiableAnnouncementTypeDto): Promise<AnnouncementType> {
+    this.logger.debug(`Getting announcement type from modifiable announcement type`);
+    switch (modifiableAnnouncementType) {
+      case ModifiableAnnouncementTypeDto.BROADCAST:
+        return AnnouncementType.Broadcast;
+      case ModifiableAnnouncementTypeDto.REPLY:
+        return AnnouncementType.Reply;
+      default:
+        throw new Error(`Unsupported announcement type ${typeof modifiableAnnouncementType}`);
+    }
+  }
+
   public async prepareNote(noteContent?: any): Promise<[string, string, string]> {
     this.logger.debug(`Preparing note`);
+    const tags: ActivityContentTag[] = this.prepareTags(noteContent?.content.tag);
+    const attachments: ActivityContentAttachment[] = await this.prepareAttachments(noteContent?.content.assets);
+
+    const note = createNote(noteContent?.content.content ?? '', new Date(noteContent?.content.published ?? ''), {
+      name: noteContent?.content.name,
+      location: this.prepareLocation(noteContent?.content.location),
+      tag: tags,
+      attachment: attachments,
+    });
+    const noteString = JSON.stringify(note);
+    const [cid, hash] = await this.pinBufferToIPFS(Buffer.from(noteString));
+    const ipfsUrl = await this.formIpfsUrl(cid);
+    return [cid, hash, ipfsUrl];
+  }
+
+  private prepareTags(tagData?: any[]): ActivityContentTag[] {
+    this.logger.debug(`Preparing tags`);
     const tags: ActivityContentTag[] = [];
-    if (noteContent?.content.tag) {
-      noteContent.content.tag.forEach((tag) => {
+    if (tagData) {
+      tagData.forEach((tag) => {
         switch (tag.type) {
           case TagTypeDto.Hashtag:
             tags.push({ name: tag.name });
@@ -149,125 +183,118 @@ export class DsnpAnnouncementProcessor {
         }
       });
     }
+    return tags;
+  }
 
+  private async prepareAttachments(assetData?: any[]): Promise<ActivityContentAttachment[]> {
     const attachments: ActivityContentAttachment[] = [];
-    if (noteContent?.content.assets) {
-      noteContent.content.assets.forEach(async (asset: AssetDto) => {
+    if (assetData) {
+      assetData.forEach(async (asset) => {
         switch (asset.type) {
-          case AttachmentTypeDto.LINK: {
-            const link: ActivityContentLink = {
-              type: 'Link',
-              href: asset.href || '',
-              name: asset.name,
-            };
-
-            attachments.push(link);
+          case AttachmentTypeDto.LINK:
+            attachments.push(this.prepareLinkAttachment(asset));
             break;
-          }
-          case AttachmentTypeDto.IMAGE: {
-            const imageLinks: ActivityContentImageLink[] = [];
-            asset.references?.forEach(async (reference) => {
-              const assetMetaData = await this.assetQueue.getJob(reference.referenceId);
-              const contentBuffer = await this.ipfsService.getPinned(reference.referenceId);
-              const hashedContent = await calculateDsnpHash(contentBuffer);
-              const image: ActivityContentImageLink = {
-                mediaType: assetMetaData?.data.mimeType,
-                hash: [hashedContent],
-                height: reference.height,
-                width: reference.width,
-                type: 'Link',
-                href: await this.formIpfsUrl(reference.referenceId),
-              };
-              imageLinks.push(image);
-            });
-            const imageActivity: ActivityContentImage = {
-              type: 'Image',
-              name: asset.name,
-              url: imageLinks,
-            };
-
-            attachments.push(imageActivity);
+          case AttachmentTypeDto.IMAGE:
+            attachments.push(await this.prepareImageAttachment(asset));
             break;
-          }
-          case AttachmentTypeDto.VIDEO: {
-            const videoLinks: ActivityContentVideoLink[] = [];
-            let duration = '';
-            asset.references?.forEach(async (reference) => {
-              const assetMetaData = await this.assetQueue.getJob(reference.referenceId);
-              const contentBuffer = await this.ipfsService.getPinned(reference.referenceId);
-              const hashedContent = await calculateDsnpHash(contentBuffer);
-              const video: ActivityContentVideoLink = {
-                mediaType: assetMetaData?.data.mimeType,
-                hash: [hashedContent],
-                height: reference.height,
-                width: reference.width,
-                type: 'Link',
-                href: await this.formIpfsUrl(reference.referenceId),
-              };
-              duration = duration ?? reference.duration ?? '';
-              videoLinks.push(video);
-            });
-            const videoActivity: ActivityContentVideo = {
-              type: 'Video',
-              name: asset.name,
-              url: videoLinks,
-              duration,
-            };
-
-            attachments.push(videoActivity);
+          case AttachmentTypeDto.VIDEO:
+            attachments.push(await this.prepareVideoAttachment(asset));
             break;
-          }
-          case AttachmentTypeDto.AUDIO: {
-            const audioLinks: ActivityContentAudioLink[] = [];
-            let duration = '';
-            asset.references?.forEach(async (reference) => {
-              const assetMetaData = await this.assetQueue.getJob(reference.referenceId);
-              const contentBuffer = await this.ipfsService.getPinned(reference.referenceId);
-              const hashedContent = await calculateDsnpHash(contentBuffer);
-              duration = duration ?? reference.duration ?? '';
-              const audio: ActivityContentAudioLink = {
-                mediaType: assetMetaData?.data.mimeType,
-                hash: [hashedContent],
-                type: 'Link',
-                href: await this.formIpfsUrl(reference.referenceId),
-              };
-              audioLinks.push(audio);
-            });
-            const audioActivity: ActivityContentAudio = {
-              type: 'Audio',
-              name: asset.name,
-              url: audioLinks,
-              duration,
-            };
-
-            attachments.push(audioActivity);
+          case AttachmentTypeDto.AUDIO:
+            attachments.push(await this.prepareAudioAttachment(asset));
             break;
-          }
           default:
             throw new Error(`Unsupported attachment type ${typeof asset.type}`);
         }
       });
     }
 
-    const note = createNote(noteContent?.content.content ?? '', new Date(noteContent?.content.published ?? ''), {
-      name: noteContent?.content.name,
-      location: {
-        latitude: noteContent?.content.location?.latitude,
-        longitude: noteContent?.content.location?.longitude,
-        radius: noteContent?.content.location?.radius,
-        altitude: noteContent?.content.location?.altitude,
-        accuracy: noteContent?.content.location?.accuracy,
-        name: noteContent?.content.location?.name,
-        units: noteContent?.content.location?.units,
-        type: 'Place',
-      },
-      tag: tags,
-      attachment: attachments,
+    return attachments;
+  }
+
+  private prepareLinkAttachment(asset: AssetDto): ActivityContentLink {
+    this.logger.debug(`Preparing link attachment`);
+    return {
+      type: 'Link',
+      href: asset.href || '',
+      name: asset.name,
+    };
+  }
+
+  private async prepareImageAttachment(asset: AssetDto): Promise<ActivityContentImage> {
+    const imageLinks: ActivityContentImageLink[] = [];
+    asset.references?.forEach(async (reference) => {
+      const assetMetaData = await this.assetQueue.getJob(reference.referenceId);
+      const contentBuffer = await this.ipfsService.getPinned(reference.referenceId);
+      const hashedContent = await calculateDsnpHash(contentBuffer);
+      const image: ActivityContentImageLink = {
+        mediaType: assetMetaData?.data.mimeType,
+        hash: [hashedContent],
+        height: reference.height,
+        width: reference.width,
+        type: 'Link',
+        href: await this.formIpfsUrl(reference.referenceId),
+      };
+      imageLinks.push(image);
     });
-    const noteString = JSON.stringify(note);
-    const [cid, hash] = await this.pinBufferToIPFS(Buffer.from(noteString));
-    const ipfsUrl = await this.formIpfsUrl(cid);
-    return [cid, hash, ipfsUrl];
+
+    return {
+      type: 'Image',
+      name: asset.name,
+      url: imageLinks,
+    };
+  }
+
+  private async prepareVideoAttachment(asset: AssetDto): Promise<ActivityContentVideo> {
+    const videoLinks: ActivityContentVideoLink[] = [];
+    let duration = '';
+    asset.references?.forEach(async (reference) => {
+      const assetMetaData = await this.assetQueue.getJob(reference.referenceId);
+      const contentBuffer = await this.ipfsService.getPinned(reference.referenceId);
+      const hashedContent = await calculateDsnpHash(contentBuffer);
+      const video: ActivityContentVideoLink = {
+        mediaType: assetMetaData?.data.mimeType,
+        hash: [hashedContent],
+        height: reference.height,
+        width: reference.width,
+        type: 'Link',
+        href: await this.formIpfsUrl(reference.referenceId),
+      };
+      duration = duration ?? reference.duration ?? '';
+      videoLinks.push(video);
+    });
+
+    return {
+      type: 'Video',
+      name: asset.name,
+      url: videoLinks,
+      duration,
+    };
+  }
+
+  private async prepareAudioAttachment(asset: AssetDto): Promise<ActivityContentAudio> {
+    const audioLinks: ActivityContentAudioLink[] = [];
+    let duration = '';
+    asset.references?.forEach(async (reference) => {
+      const assetMetaData = await this.assetQueue.getJob(reference.referenceId);
+      const contentBuffer = await this.ipfsService.getPinned(reference.referenceId);
+      const hashedContent = await calculateDsnpHash(contentBuffer);
+      duration = duration ?? reference.duration ?? '';
+      const audio: ActivityContentAudioLink = {
+        mediaType: assetMetaData?.data.mimeType,
+        hash: [hashedContent],
+        type: 'Link',
+        href: await this.formIpfsUrl(reference.referenceId),
+      };
+      audioLinks.push(audio);
+    });
+
+    return {
+      type: 'Audio',
+      name: asset.name,
+      url: audioLinks,
+      duration,
+    };
   }
 
   private async processBroadcast(content: BroadcastDto, dsnpUserId: string): Promise<BroadcastAnnouncement> {
@@ -295,8 +322,24 @@ export class DsnpAnnouncementProcessor {
 
   private async processProfile(content: ProfileDto, dsnpUserId: string): Promise<ProfileAnnouncement> {
     this.logger.debug(`Processing profile`);
+    const attachments: ActivityContentImageLink[] = await this.prepareProfileIconAttachments(content.profile.icon ?? []);
+
+    const profileActivity: ActivityContentProfile = {
+      '@context': 'https://www.w3.org/ns/activitystreams',
+      type: 'Profile',
+      name: content.profile.name,
+      published: content.profile.published,
+      location: this.prepareLocation(content.profile.location),
+      summary: content.profile.summary || '',
+      icon: attachments,
+    };
+    const profileString = JSON.stringify(profileActivity);
+    const [cid, hash] = await this.pinBufferToIPFS(Buffer.from(profileString));
+    return createProfile(dsnpUserId, await this.formIpfsUrl(cid), hash);
+  }
+
+  private async prepareProfileIconAttachments(icons: any[]): Promise<ActivityContentImageLink[]> {
     const attachments: ActivityContentImageLink[] = [];
-    const icons = content.profile.icon || [];
     icons.forEach(async (icon) => {
       const assetMetaData = await this.assetQueue.getJob(icon.referenceId);
       const contentBuffer = await this.ipfsService.getPinned(icon.referenceId);
@@ -312,26 +355,22 @@ export class DsnpAnnouncementProcessor {
       attachments.push(image);
     });
 
-    const profileActivity: ActivityContentProfile = {
-      '@context': 'https://www.w3.org/ns/activitystreams',
-      type: 'Profile',
-      name: content.profile.name,
-      published: content.profile.published,
-      location: {
-        latitude: content.profile.location?.latitude,
-        longitude: content.profile.location?.longitude,
-        radius: content.profile.location?.radius,
-        altitude: content.profile.location?.altitude,
-        accuracy: content.profile.location?.accuracy,
-        name: content.profile.location?.name || '',
-        type: 'Place',
-      },
-      summary: content.profile.summary || '',
-      icon: attachments,
+    return attachments;
+  }
+
+  private prepareLocation(locationData: any): any {
+    this.logger.debug(`Preparing location`);
+    if (!locationData) return null;
+    return {
+      latitude: locationData.latitude,
+      longitude: locationData.longitude,
+      radius: locationData.radius,
+      altitude: locationData.altitude,
+      accuracy: locationData.accuracy,
+      name: locationData.name || '',
+      units: locationData.units,
+      type: 'Place',
     };
-    const profileString = JSON.stringify(profileActivity);
-    const [cid, hash] = await this.pinBufferToIPFS(Buffer.from(profileString));
-    return createProfile(dsnpUserId, await this.formIpfsUrl(cid), hash);
   }
 
   private async pinBufferToIPFS(buf: Buffer): Promise<[string, string, number]> {
