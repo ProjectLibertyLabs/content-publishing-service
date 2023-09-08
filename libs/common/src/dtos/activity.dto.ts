@@ -9,7 +9,6 @@ import {
   IsEnum,
   IsLatitude,
   IsLongitude,
-  IsMimeType,
   IsNumber,
   IsOptional,
   IsPositive,
