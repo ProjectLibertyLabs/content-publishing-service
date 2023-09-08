@@ -157,7 +157,7 @@ export class DsnpAnnouncementProcessor {
     const noteString = JSON.stringify(note);
     const [cid, hash] = await this.pinBufferToIPFS(Buffer.from(noteString));
     const ipfsUrl = await this.formIpfsUrl(cid);
-    return [cid, hash, ipfsUrl];
+    return [cid, ipfsUrl, hash];
   }
 
   private prepareTags(tagData?: any[]): ActivityContentTag[] {
