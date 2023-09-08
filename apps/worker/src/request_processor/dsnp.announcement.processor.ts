@@ -175,7 +175,7 @@ export class DsnpAnnouncementProcessor {
             tags.push({
               name: tag.name,
               type: 'Mention',
-              id: tag.mentionedId || '',
+              id: tag.mentionedId,
             });
             break;
           default:
@@ -330,7 +330,7 @@ export class DsnpAnnouncementProcessor {
       name: content.profile.name,
       published: content.profile.published,
       location: this.prepareLocation(content.profile.location),
-      summary: content.profile.summary || '',
+      summary: content.profile.summary,
       icon: attachments,
     };
     const profileString = JSON.stringify(profileActivity);
@@ -367,7 +367,7 @@ export class DsnpAnnouncementProcessor {
       radius: locationData.radius,
       altitude: locationData.altitude,
       accuracy: locationData.accuracy,
-      name: locationData.name || '',
+      name: locationData.name,
       units: locationData.units,
       type: 'Place',
     };
