@@ -51,9 +51,9 @@ export class ApiService {
   }
 
   async validateAssets(content: AssetIncludedRequestDto): Promise<void> {
-    const checkingList: Array<{ onlyImage: boolean; referenceId: string; mimeType: string }> = [];
+    const checkingList: Array<{ onlyImage: boolean; referenceId: string }> = [];
     if (content.profile) {
-      content.profile.icon?.forEach((reference) => checkingList.push({ onlyImage: true, referenceId: reference.referenceId, mimeType: reference.mimeType }));
+      content.profile.icon?.forEach((reference) => checkingList.push({ onlyImage: true, referenceId: reference.referenceId }));
     } else if (content.content) {
       content.content.assets?.forEach(
         (asset) =>
@@ -61,7 +61,6 @@ export class ApiService {
             checkingList.push({
               onlyImage: false,
               referenceId: reference.referenceId,
-              mimeType: reference.mimeType,
             }),
           ),
       );

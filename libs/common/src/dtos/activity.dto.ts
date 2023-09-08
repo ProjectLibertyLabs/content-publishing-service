@@ -89,9 +89,6 @@ export class AssetReferenceDto {
   @IsString()
   referenceId: string;
 
-  @IsMimeType()
-  mimeType: string;
-
   @IsOptional()
   @IsNumber()
   @IsPositive()

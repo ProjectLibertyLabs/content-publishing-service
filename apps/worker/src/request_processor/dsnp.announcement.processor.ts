@@ -12,7 +12,7 @@ import {
 } from '@dsnp/activity-content/types';
 import { Injectable, Logger } from '@nestjs/common';
 import { InjectQueue } from '@nestjs/bullmq';
-import { Queue } from 'bullmq';
+import { Job, Queue } from 'bullmq';
 import {
   TagTypeDto,
   AssetDto,
@@ -46,12 +46,14 @@ import {
   createTombstone,
   createUpdate,
 } from '../../../../libs/common/src/interfaces/dsnp';
+import { IAssetJob } from '../../../../libs/common/src/interfaces/asset-job.interface';
 
 @Injectable()
 export class DsnpAnnouncementProcessor {
   private logger: Logger;
 
   constructor(
+    @InjectQueue(QueueConstants.ASSET_QUEUE_NAME) private assetQueue: Queue,
     @InjectQueue(QueueConstants.BROADCAST_QUEUE_NAME) private broadcastQueue: Queue,
     @InjectQueue(QueueConstants.REPLY_QUEUE_NAME) private replyQueue: Queue,
     @InjectQueue(QueueConstants.REACTION_QUEUE_NAME) private reactionQueue: Queue,
@@ -156,7 +158,7 @@ export class DsnpAnnouncementProcessor {
             const link: ActivityContentLink = {
               type: 'Link',
               href: asset.href || '',
-              name: asset.name || '',
+              name: asset.name,
             };
 
             attachments.push(link);
@@ -165,10 +167,11 @@ export class DsnpAnnouncementProcessor {
           case AttachmentTypeDto.IMAGE: {
             const imageLinks: ActivityContentImageLink[] = [];
             asset.references?.forEach(async (reference) => {
+              const assetMetaData = await this.assetQueue.getJob(reference.referenceId);
               const contentBuffer = await this.ipfsService.getPinned(reference.referenceId);
               const hashedContent = await calculateDsnpHash(contentBuffer);
               const image: ActivityContentImageLink = {
-                mediaType: reference.mimeType,
+                mediaType: assetMetaData?.data.mimeType,
                 hash: [hashedContent],
                 height: reference.height,
                 width: reference.width,
@@ -179,7 +182,7 @@ export class DsnpAnnouncementProcessor {
             });
             const imageActivity: ActivityContentImage = {
               type: 'Image',
-              name: asset.name || '',
+              name: asset.name,
               url: imageLinks,
             };
 
@@ -190,10 +193,11 @@ export class DsnpAnnouncementProcessor {
             const videoLinks: ActivityContentVideoLink[] = [];
             let duration = '';
             asset.references?.forEach(async (reference) => {
+              const assetMetaData = await this.assetQueue.getJob(reference.referenceId);
               const contentBuffer = await this.ipfsService.getPinned(reference.referenceId);
               const hashedContent = await calculateDsnpHash(contentBuffer);
               const video: ActivityContentVideoLink = {
-                mediaType: reference.mimeType,
+                mediaType: assetMetaData?.data.mimeType,
                 hash: [hashedContent],
                 height: reference.height,
                 width: reference.width,
@@ -205,7 +209,7 @@ export class DsnpAnnouncementProcessor {
             });
             const videoActivity: ActivityContentVideo = {
               type: 'Video',
-              name: asset.name || '',
+              name: asset.name,
               url: videoLinks,
               duration,
             };
@@ -217,11 +221,12 @@ export class DsnpAnnouncementProcessor {
             const audioLinks: ActivityContentAudioLink[] = [];
             let duration = '';
             asset.references?.forEach(async (reference) => {
+              const assetMetaData = await this.assetQueue.getJob(reference.referenceId);
               const contentBuffer = await this.ipfsService.getPinned(reference.referenceId);
               const hashedContent = await calculateDsnpHash(contentBuffer);
               duration = duration ?? reference.duration ?? '';
               const audio: ActivityContentAudioLink = {
-                mediaType: reference.mimeType,
+                mediaType: assetMetaData?.data.mimeType,
                 hash: [hashedContent],
                 type: 'Link',
                 href: await this.formIpfsUrl(reference.referenceId),
@@ -230,7 +235,7 @@ export class DsnpAnnouncementProcessor {
             });
             const audioActivity: ActivityContentAudio = {
               type: 'Audio',
-              name: asset.name || '',
+              name: asset.name,
               url: audioLinks,
               duration,
             };
@@ -252,7 +257,8 @@ export class DsnpAnnouncementProcessor {
         radius: noteContent?.content.location?.radius,
         altitude: noteContent?.content.location?.altitude,
         accuracy: noteContent?.content.location?.accuracy,
-        name: noteContent?.content.location?.name || '',
+        name: noteContent?.content.location?.name,
+        units: noteContent?.content.location?.units,
         type: 'Place',
       },
       tag: tags,
@@ -292,10 +298,11 @@ export class DsnpAnnouncementProcessor {
     const attachments: ActivityContentImageLink[] = [];
     const icons = content.profile.icon || [];
     icons.forEach(async (icon) => {
+      const assetMetaData = await this.assetQueue.getJob(icon.referenceId);
       const contentBuffer = await this.ipfsService.getPinned(icon.referenceId);
       const hashedContent = await calculateDsnpHash(contentBuffer);
       const image: ActivityContentImageLink = {
-        mediaType: icon.mimeType,
+        mediaType: assetMetaData?.data.mimeType,
         hash: [hashedContent],
         height: icon.height,
         width: icon.width,
@@ -308,8 +315,8 @@ export class DsnpAnnouncementProcessor {
     const profileActivity: ActivityContentProfile = {
       '@context': 'https://www.w3.org/ns/activitystreams',
       type: 'Profile',
-      name: content.profile.name || '',
-      published: content.profile.published || '',
+      name: content.profile.name,
+      published: content.profile.published,
       location: {
         latitude: content.profile.location?.latitude,
         longitude: content.profile.location?.longitude,
