@@ -24,6 +24,24 @@ import { IpfsService } from '../../../libs/common/src/utils/ipfs.client';
     BullModule.registerQueue({
       name: QueueConstants.ASSET_QUEUE_NAME,
     }),
+    BullModule.registerQueue({
+      name: QueueConstants.BROADCAST_QUEUE_NAME,
+    }),
+    BullModule.registerQueue({
+      name: QueueConstants.REPLY_QUEUE_NAME,
+    }),
+    BullModule.registerQueue({
+      name: QueueConstants.REACTION_QUEUE_NAME,
+    }),
+    BullModule.registerQueue({
+      name: QueueConstants.TOMBSTONE_QUEUE_NAME,
+    }),
+    BullModule.registerQueue({
+      name: QueueConstants.UPDATE_QUEUE_NAME,
+    }),
+    BullModule.registerQueue({
+      name: QueueConstants.PROFILE_QUEUE_NAME,
+    }),
     ConfigModule,
     RedisModule.forRootAsync(
       {
