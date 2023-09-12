@@ -5,7 +5,7 @@ import { Job, Queue } from 'bullmq';
 import Redis from 'ioredis';
 import { EventEmitter2 } from '@nestjs/event-emitter';
 import { BlockchainService } from '../blockchain/blockchain.service';
-import { ConfigService } from '../../../api/src/config/config.service';
+import { ConfigService } from '../../../../libs/common/src/config/config.service';
 import { IStatusMonitorJob } from '../interfaces/status-monitor.interface';
 import { QueueConstants } from '../../../../libs/common/src';
 

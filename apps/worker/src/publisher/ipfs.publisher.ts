@@ -6,7 +6,7 @@ import { SubmittableExtrinsic } from '@polkadot/api-base/types';
 import { InjectQueue } from '@nestjs/bullmq';
 import { Hash } from '@polkadot/types/interfaces';
 import { BlockchainService } from '../blockchain/blockchain.service';
-import { ConfigService } from '../../../api/src/config/config.service';
+import { ConfigService } from '../../../../libs/common/src/config/config.service';
 import { IPublisherJob } from '../interfaces/publisher-job.interface';
 import { createKeys } from '../blockchain/create-keys';
 import { IStatusMonitorJob } from '../interfaces/status-monitor.interface';
