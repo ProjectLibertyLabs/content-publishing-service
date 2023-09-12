@@ -47,8 +47,6 @@ export class BatchAnnouncer {
     const [parquetSchema, writerOptions] = fromFrequencySchema(schema);
     const publishStream = new PassThrough();
     const parquetBufferAwait = this.bufferPublishStream(publishStream);
-
-    this.logger.debug('before writer');
     const writer = await ParquetWriter.openStream(parquetSchema, publishStream as any, writerOptions);
     // eslint-disable-next-line no-restricted-syntax
     for await (const announcement of announcements) {
