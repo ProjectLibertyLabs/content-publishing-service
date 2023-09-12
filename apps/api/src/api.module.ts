@@ -74,7 +74,7 @@ import { IpfsService } from '../../../libs/common/src/utils/ipfs.client';
     ScheduleModule.forRoot(),
   ],
   providers: [ConfigService, ApiService, IpfsService],
-  controllers: process.env?.ENABLE_DEV_CONTROLLER === 'true' ? [DevelopmentController, ApiController] : [ApiController],
+  controllers: process.env?.ENVIRONMENT === 'dev' ? [DevelopmentController, ApiController] : [ApiController],
   exports: [],
 })
 export class ApiModule {}

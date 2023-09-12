@@ -6,19 +6,18 @@ import { InjectQueue } from '@nestjs/bullmq';
 import { SchedulerRegistry } from '@nestjs/schedule';
 import { randomUUID } from 'crypto';
 import { ConfigService } from '../../../api/src/config/config.service';
-import { QueueConstants } from '../../../../libs/common/src';
 import { Announcement } from '../../../../libs/common/src/interfaces/dsnp';
 import { RedisUtils } from '../../../../libs/common/src/utils/redis';
 import { IBatchMetadata } from '../../../../libs/common/src/interfaces/batch.interface';
 import getBatchMetadataKey = RedisUtils.getBatchMetadataKey;
 import getBatchDataKey = RedisUtils.getBatchDataKey;
 import { IBatchAnnouncerJobData } from '../interfaces/batch-announcer.job.interface';
+import { DsnpSchemas } from '../../../../libs/common/src/utils/dsnp.schema';
+import { QueueConstants } from '../../../../libs/common/src';
 
 @Injectable()
 export class BatchingProcessorService {
   private logger: Logger;
-
-  private batchMap: Map<string, IBatchMetadata>;
 
   constructor(
     @InjectRedis() private redis: Redis,
@@ -27,29 +26,28 @@ export class BatchingProcessorService {
     private configService: ConfigService,
   ) {
     this.logger = new Logger(this.constructor.name);
-    this.batchMap = new Map();
   }
 
   async setupActiveBatchTimeout(queueName: string) {
     const metadata = await this.getMetadataFromRedis(queueName);
     if (metadata) {
-      this.batchMap[queueName] = metadata;
       const openTimeMs = Math.round(Date.now() - metadata.startTimestamp);
       const batchTimeoutInMs = 12 * 1000; // TODO: get from config
       if (openTimeMs >= batchTimeoutInMs) {
         await this.closeBatch(queueName, metadata.batchId, false);
       } else {
         const remainingTimeMs = batchTimeoutInMs - openTimeMs;
-        const initialTimeout = setTimeout(async (batchQueueName, batchId) => this.closeBatch(batchQueueName, batchId, true), remainingTimeMs);
-        this.schedulerRegistry.addTimeout(BatchingProcessorService.getTimeoutName(queueName, metadata.batchId), initialTimeout);
+        this.addBatchTimeout(queueName, metadata.batchId, remainingTimeMs);
       }
     }
   }
 
   async process(job: Job<Announcement, any, string>, queueName: string): Promise<any> {
     this.logger.log(`Processing job ${job.id} from ${queueName}`);
-    const currentBatch = this.batchMap[queueName];
-    if (!currentBatch) {
+
+    const currentBatchMetadata = await this.getMetadataFromRedis(queueName);
+    if (!currentBatchMetadata) {
+      this.logger.log(`Processing job ${job.id} no current batch`);
       // No active batch exists, creating a new one
       const metadata = {
         batchId: randomUUID().toString(),
@@ -62,28 +60,24 @@ export class BatchingProcessorService {
         .hsetnx(getBatchDataKey(queueName), job.id!, JSON.stringify(job.data))
         .exec();
       this.logger.debug(result);
-      this.batchMap[queueName] = metadata;
-      const initialTimeout = setTimeout(async (batchQueueName, batchId) => this.closeBatch(batchQueueName, batchId, true), 12 * 1000); // TODO: get from config
-      this.schedulerRegistry.addTimeout(BatchingProcessorService.getTimeoutName(queueName, metadata.batchId), initialTimeout);
+
+      const timeout = 12 * 1000; // TODO: get from config
+      this.addBatchTimeout(queueName, metadata.batchId, timeout);
     } else {
       // continue on active batch
-      const batchMetadata = await this.getMetadataFromRedis(queueName);
-      if (batchMetadata) {
-        batchMetadata.rowCount += 1;
-        const result = await this.redis
-          .multi()
-          .hsetnx(getBatchDataKey(queueName), job.id!, JSON.stringify(job.data))
-          .set(getBatchMetadataKey(queueName), JSON.stringify(batchMetadata))
-          .exec();
-        this.logger.debug(result);
-        this.batchMap[queueName] = batchMetadata;
+      this.logger.log(`Processing job ${job.id} existing batch ${currentBatchMetadata.batchId}`);
 
-        if (batchMetadata.rowCount >= 100) {
-          // TODO: get from config
-          await this.closeBatch(queueName, batchMetadata.batchId, false);
-        }
-      } else {
-        this.batchMap.delete(queueName);
+      currentBatchMetadata.rowCount += 1;
+      const result = await this.redis
+        .multi()
+        .set(getBatchMetadataKey(queueName), JSON.stringify(currentBatchMetadata))
+        .hsetnx(getBatchDataKey(queueName), job.id!, JSON.stringify(job.data))
+        .exec();
+      this.logger.debug(result);
+
+      // TODO: get from config
+      if (currentBatchMetadata.rowCount >= 100) {
+        await this.closeBatch(queueName, currentBatchMetadata.batchId, false);
       }
     }
   }
@@ -103,17 +97,20 @@ export class BatchingProcessorService {
     });
     const job = {
       batchId,
-      schemaId: 1, // TODO: get from config
+      schemaId: DsnpSchemas.getSchemaId(this.configService.environment, QueueConstants.QUEUE_NAME_TO_ANNOUNCEMENT_MAP.get(queueName)!),
       announcements,
     } as IBatchAnnouncerJobData;
-    this.outputQueue.add(`Batch Job - ${metadata?.batchId}`, job, { jobId: metadata?.batchId, removeOnFail: false, removeOnComplete: 100 });
-    this.logger.log(batch);
+    await this.outputQueue.add(`Batch Job - ${metadata?.batchId}`, job, { jobId: metadata?.batchId, removeOnFail: false, removeOnComplete: 100 });
+    this.logger.debug(batch);
     try {
-      const result = await this.redis.multi().del(getBatchMetadataKey(queueName)).hdel(getBatchDataKey(queueName)).exec();
+      const result = await this.redis.multi().del(getBatchMetadataKey(queueName)).del(getBatchDataKey(queueName)).exec();
       this.logger.debug(result);
-      this.schedulerRegistry.deleteTimeout(BatchingProcessorService.getTimeoutName(queueName, batchId));
+      const timeoutName = BatchingProcessorService.getTimeoutName(queueName, batchId);
+      if (this.schedulerRegistry.doesExist('timeout', timeoutName)) {
+        this.schedulerRegistry.deleteTimeout(timeoutName);
+      }
     } catch (e) {
-      this.logger.debug(e);
+      this.logger.error(e);
     }
   }
 
@@ -125,5 +122,10 @@ export class BatchingProcessorService {
   // eslint-disable-next-line class-methods-use-this
   private static getTimeoutName(queueName: string, batchId: string): string {
     return `TIMEOUT:${queueName}:${batchId}`;
+  }
+
+  private addBatchTimeout(queueName: string, batchId: string, timeoutMs: number) {
+    const timeoutHandler = setTimeout(async () => this.closeBatch(queueName, batchId, true), timeoutMs);
+    this.schedulerRegistry.addTimeout(BatchingProcessorService.getTimeoutName(queueName, batchId), timeoutHandler);
   }
 }
