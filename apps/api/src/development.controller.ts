@@ -63,10 +63,6 @@ export class DevelopmentController {
 
   @Post('/dummy/announcement/:queueType/:count')
   async populate(@Param('queueType') queueType: AnnouncementTypeDto, @Param('count') count: number) {
-    // const queue: Queue | undefined = this.queueMapper.get(queueType);
-    // console.log(queue);
-    // console.log(queueType);
-    // console.log(count);
     const promises: Promise<Job>[] = [];
     // eslint-disable-next-line no-plusplus
     for (let i = 0; i < count; i++) {
