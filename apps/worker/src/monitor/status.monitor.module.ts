@@ -9,7 +9,7 @@ import { RedisModule } from '@liaoliaots/nestjs-redis';
 import { StatusMonitoringService } from './status.monitor.service';
 import { ConfigModule } from '../../../../libs/common/src/config/config.module';
 import { ConfigService } from '../../../../libs/common/src/config/config.service';
-import { BlockchainModule } from '../blockchain/blockchain.module';
+import { BlockchainModule } from '../../../../libs/common/src/blockchain/blockchain.module';
 import { QueueConstants } from '../../../../libs/common/src';
 
 @Module({

@@ -6,7 +6,7 @@ import { InjectRedis } from '@liaoliaots/nestjs-redis';
 import Redis from 'ioredis';
 import { PalletSchemasSchema } from '@polkadot/types/lookup';
 import { hexToString } from '@polkadot/util';
-import { BlockchainService } from '../blockchain/blockchain.service';
+import { BlockchainService } from '../../../../libs/common/src/blockchain/blockchain.service';
 import { ConfigService } from '../../../../libs/common/src/config/config.service';
 import { IBatchAnnouncerJobData } from '../interfaces/batch-announcer.job.interface';
 import { IPublisherJob } from '../interfaces/publisher-job.interface';

@@ -11,7 +11,7 @@ import { ConfigModule } from '../../../../libs/common/src/config/config.module';
 import { ConfigService } from '../../../../libs/common/src/config/config.service';
 import { BatchAnnouncer } from './batch.announcer';
 import { QueueConstants } from '../../../../libs/common/src';
-import { BlockchainModule } from '../blockchain/blockchain.module';
+import { BlockchainModule } from '../../../../libs/common/src/blockchain/blockchain.module';
 import { IpfsService } from '../../../../libs/common/src/utils/ipfs.client';
 
 @Module({

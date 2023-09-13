@@ -6,7 +6,7 @@ import { RedisModule } from '@liaoliaots/nestjs-redis';
 import { PublishingService } from './publisher/publishing.service';
 import { PublisherModule } from './publisher/publisher.module';
 import { WorkerService } from './worker.service';
-import { BlockchainModule } from './blockchain/blockchain.module';
+import { BlockchainModule } from '../../../libs/common/src/blockchain/blockchain.module';
 import { BatchAnnouncementService } from './batch_announcer/batch.announcer.service';
 import { BatchAnnouncerModule } from './batch_announcer/batch.announcer.module';
 import { StatusMonitorModule } from './monitor/status.monitor.module';
