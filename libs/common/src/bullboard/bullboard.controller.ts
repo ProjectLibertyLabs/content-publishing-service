@@ -1,4 +1,4 @@
-import { Controller, Get, Logger } from '@nestjs/common';
+import { Controller, Get, HttpStatus, Logger } from '@nestjs/common';
 import { BullBoardInstance, InjectBullBoard } from '@bull-board/nestjs';
 
 @Controller('bull-board')
@@ -9,7 +9,7 @@ export class BullBoardController {
     this.logger = new Logger(this.constructor.name);
   }
 
-  @Get()
+  @Get('panel')
   async getBullBoard() {
     return this.bullBoardInstance;
   }

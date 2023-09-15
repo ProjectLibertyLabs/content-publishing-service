@@ -10,6 +10,8 @@ import { ApiService } from './api.service';
 import { IpfsService } from '../../../libs/common/src/utils/ipfs.client';
 import { ConfigModule } from '../../../libs/common/src/config/config.module';
 import { ConfigService } from '../../../libs/common/src/config/config.service';
+import { BullBoardController } from '../../../libs/common/src/bullboard/bullboard.controller';
+import { BullControlPanelModule } from '../../../libs/common/src/bullboard/bullboard.module';
 
 @Module({
   imports: [
@@ -72,9 +74,10 @@ import { ConfigService } from '../../../libs/common/src/config/config.service';
       ignoreErrors: false,
     }),
     ScheduleModule.forRoot(),
+    BullControlPanelModule,
   ],
   providers: [ConfigService, ApiService, IpfsService],
-  controllers: process.env?.ENVIRONMENT === 'dev' ? [DevelopmentController, ApiController] : [ApiController],
+  controllers: process.env?.ENVIRONMENT === 'dev' ? [DevelopmentController, ApiController, BullBoardController] : [ApiController, BullBoardController],
   exports: [],
 })
 export class ApiModule {}
