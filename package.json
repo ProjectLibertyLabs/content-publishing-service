@@ -38,6 +38,7 @@
   "homepage": "https://github.com/AmplicaLabs/content-publishing-service#readme",
   "dependencies": {
     "@bull-board/api": "^5.8.3",
+    "@bull-board/express": "^5.8.3",
     "@bull-board/nestjs": "^5.8.3",
     "@bull-board/ui": "^5.8.3",
     "@dsnp/activity-content": "^1.1.0",
