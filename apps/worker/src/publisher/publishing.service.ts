@@ -6,6 +6,7 @@ import Redis from 'ioredis';
 import { SchedulerRegistry } from '@nestjs/schedule';
 import { EventEmitter2, OnEvent } from '@nestjs/event-emitter';
 import { MILLISECONDS_PER_SECOND } from 'time-constants';
+import { Hash } from '@polkadot/types/interfaces';
 import { BlockchainService } from '../../../../libs/common/src/blockchain/blockchain.service';
 import { ConfigService } from '../../../../libs/common/src/config/config.service';
 import { IPublisherJob } from '../interfaces/publisher-job.interface';
@@ -13,7 +14,6 @@ import { IPFSPublisher } from './ipfs.publisher';
 import { CAPACITY_EPOCH_TIMEOUT_NAME, SECONDS_PER_BLOCK } from '../../../../libs/common/src/constants';
 import { QueueConstants } from '../../../../libs/common/src';
 import { ITxMonitorJob } from '../interfaces/status-monitor.interface';
-import { Hash } from '@polkadot/types/interfaces';
 
 @Injectable()
 @Processor(QueueConstants.PUBLISH_QUEUE_NAME, {
