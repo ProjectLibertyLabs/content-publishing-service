@@ -6,14 +6,14 @@ import Redis from 'ioredis';
 import { EventEmitter2 } from '@nestjs/event-emitter';
 import { BlockchainService } from '../../../../libs/common/src/blockchain/blockchain.service';
 import { ConfigService } from '../../../../libs/common/src/config/config.service';
-import { IStatusMonitorJob } from '../interfaces/status-monitor.interface';
+import { ITxMonitorJob } from '../interfaces/status-monitor.interface';
 import { QueueConstants } from '../../../../libs/common/src';
 
 @Injectable()
 @Processor(QueueConstants.TRANSACTION_RECEIPT_QUEUE_NAME, {
   concurrency: 2,
 })
-export class StatusMonitoringService extends WorkerHost implements OnApplicationBootstrap, OnModuleDestroy {
+export class TxStatusMonitoringService extends WorkerHost implements OnApplicationBootstrap, OnModuleDestroy {
   private logger: Logger;
 
   constructor(
@@ -35,11 +35,11 @@ export class StatusMonitoringService extends WorkerHost implements OnApplication
     try {
       this.logger.debug('Shutting down publishing service');
     } catch (e) {
-      // 💀 //
+      // 🐂 //
     }
   }
 
-  async process(job: Job<IStatusMonitorJob, any, string>): Promise<any> {
+  async process(job: Job<ITxMonitorJob, any, string>): Promise<any> {
     this.logger.log(`Processing job ${job.id} of type ${job.name}`);
     try {
       this.logger.verbose(`Successfully completed job ${job.id}`);

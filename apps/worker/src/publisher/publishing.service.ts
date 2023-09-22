@@ -12,6 +12,8 @@ import { IPublisherJob } from '../interfaces/publisher-job.interface';
 import { IPFSPublisher } from './ipfs.publisher';
 import { CAPACITY_EPOCH_TIMEOUT_NAME, SECONDS_PER_BLOCK } from '../../../../libs/common/src/constants';
 import { QueueConstants } from '../../../../libs/common/src';
+import { ITxMonitorJob } from '../interfaces/status-monitor.interface';
+import { Hash } from '@polkadot/types/interfaces';
 
 @Injectable()
 @Processor(QueueConstants.PUBLISH_QUEUE_NAME, {
@@ -24,6 +26,7 @@ export class PublishingService extends WorkerHost implements OnApplicationBootst
 
   constructor(
     @InjectRedis() private cacheManager: Redis,
+    @InjectQueue(QueueConstants.TRANSACTION_RECEIPT_QUEUE_NAME) private txReceiptQueue,
     @InjectQueue(QueueConstants.PUBLISH_QUEUE_NAME) private publishQueue: Queue,
     private blockchainService: BlockchainService,
     private configService: ConfigService,
@@ -50,9 +53,8 @@ export class PublishingService extends WorkerHost implements OnApplicationBootst
   async process(job: Job<IPublisherJob, any, string>): Promise<any> {
     this.logger.log(`Processing job ${job.id} of type ${job.name}`);
     try {
-      const totalCapacityUsed = await this.ipfsPublisher.publish(job.data);
-      await this.setEpochCapacity(totalCapacityUsed);
-
+      const currentBlockNumber = await this.blockchainService.getLatestFinalizedBlockHash();
+      const txHash = await this.ipfsPublisher.publish(job.data);
       this.logger.verbose(`Successfully completed job ${job.id}`);
       return { success: true };
     } catch (e) {
@@ -65,6 +67,16 @@ export class PublishingService extends WorkerHost implements OnApplicationBootst
     } finally {
       await this.checkCapacity();
     }
+  }
+
+  async sendJobToTxReceiptQueue(jobId: any, txHash: Hash, lastBlockNumber: bigint): Promise<void> {
+    const job: ITxMonitorJob = {
+      id: txHash.toString(),
+      lastFinalizedBlockNumber: lastBlockNumber,
+      txHash,
+      publisherJobId: jobId,
+    };
+    await this.txReceiptQueue.add(txHash.toString(), job, { removeOnComplete: true, removeOnFail: true });
   }
 
   private async setEpochCapacity(totalCapacityUsed: { [key: string]: bigint }): Promise<void> {

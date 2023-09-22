@@ -10,7 +10,7 @@ import { BlockchainModule } from '../../../libs/common/src/blockchain/blockchain
 import { BatchAnnouncementService } from './batch_announcer/batch.announcer.service';
 import { BatchAnnouncerModule } from './batch_announcer/batch.announcer.module';
 import { StatusMonitorModule } from './monitor/status.monitor.module';
-import { StatusMonitoringService } from './monitor/status.monitor.service';
+import { StatusMonitoringService } from './monitor/tx.status.monitor.service';
 import { AssetProcessorModule } from './asset_processor/asset.processor.module';
 import { AssetProcessorService } from './asset_processor/asset.processor.service';
 import { RequestProcessorModule } from './request_processor/request.processor.module';
