@@ -4,10 +4,12 @@ import { Injectable, Logger, OnApplicationBootstrap, OnModuleDestroy } from '@ne
 import { Job, Queue } from 'bullmq';
 import Redis from 'ioredis';
 import { EventEmitter2 } from '@nestjs/event-emitter';
+import { MILLISECONDS_PER_SECOND } from 'time-constants';
 import { BlockchainService } from '../../../../libs/common/src/blockchain/blockchain.service';
 import { ConfigService } from '../../../../libs/common/src/config/config.service';
 import { ITxMonitorJob } from '../interfaces/status-monitor.interface';
 import { QueueConstants } from '../../../../libs/common/src';
+import { SECONDS_PER_BLOCK } from '../../../../libs/common/src/constants';
 
 @Injectable()
 @Processor(QueueConstants.TRANSACTION_RECEIPT_QUEUE_NAME, {
@@ -56,5 +58,25 @@ export class TxStatusMonitoringService extends WorkerHost implements OnApplicati
   @OnWorkerEvent('completed')
   onCompleted() {
     // do some stuff
+  }
+
+  private async setEpochCapacity(totalCapacityUsed: { [key: string]: bigint }): Promise<void> {
+    Object.entries(totalCapacityUsed).forEach(async ([epoch, capacityUsed]) => {
+      const epochCapacityKey = `epochCapacity:${epoch}`;
+
+      try {
+        const epochCapacity = BigInt((await this.cacheManager.get(epochCapacityKey)) ?? 0);
+        const newEpochCapacity = epochCapacity + capacityUsed;
+
+        const epochDurationBlocks = await this.blockchainService.getCurrentEpochLength();
+        const epochDuration = epochDurationBlocks * SECONDS_PER_BLOCK * MILLISECONDS_PER_SECOND;
+
+        await this.cacheManager.setex(epochCapacityKey, epochDuration, newEpochCapacity.toString());
+      } catch (error) {
+        this.logger.error(`Error setting epoch capacity: ${error}`);
+
+        throw error;
+      }
+    });
   }
 }

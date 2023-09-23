@@ -79,26 +79,6 @@ export class PublishingService extends WorkerHost implements OnApplicationBootst
     await this.txReceiptQueue.add(txHash.toString(), job, { removeOnComplete: true, removeOnFail: true });
   }
 
-  private async setEpochCapacity(totalCapacityUsed: { [key: string]: bigint }): Promise<void> {
-    Object.entries(totalCapacityUsed).forEach(async ([epoch, capacityUsed]) => {
-      const epochCapacityKey = `epochCapacity:${epoch}`;
-
-      try {
-        const epochCapacity = BigInt((await this.cacheManager.get(epochCapacityKey)) ?? 0);
-        const newEpochCapacity = epochCapacity + capacityUsed;
-
-        const epochDurationBlocks = await this.blockchainService.getCurrentEpochLength();
-        const epochDuration = epochDurationBlocks * SECONDS_PER_BLOCK * MILLISECONDS_PER_SECOND;
-
-        await this.cacheManager.setex(epochCapacityKey, epochDuration, newEpochCapacity.toString());
-      } catch (error) {
-        this.logger.error(`Error setting epoch capacity: ${error}`);
-
-        throw error;
-      }
-    });
-  }
-
   private async checkCapacity(): Promise<void> {
     const capacityLimit = this.configService.getCapacityLimit();
     const capacity = await this.blockchainService.capacityInfo(this.configService.getProviderId());
