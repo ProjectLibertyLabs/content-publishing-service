@@ -44,13 +44,13 @@ export class TxStatusMonitoringService extends WorkerHost implements OnApplicati
   async process(job: Job<ITxMonitorJob, any, string>): Promise<any> {
     this.logger.log(`Processing job ${job.id} of type ${job.name}`);
     try {
-      const totalBlockToParse = BigInt(100); // TODO: make this configurable
+      let blocksToParse = 100n;
       const lastFinaledBlockNumber = job.data.lastFinalizedBlockNumber;
+      const currentFinalizedBlockNumber = await this.blockchainService.getLatestFinalizedBlockHash();
       const blockList: bigint[] = [];
-      for (let i = 0; i < totalBlockToParse; i += 1) {
-        blockList.push(lastFinaledBlockNumber + BigInt(i));
-      }
+      blocksToParse = blocksToParse > currentFinalizedBlockNumber - lastFinaledBlockNumber ? currentFinalizedBlockNumber - lastFinaledBlockNumber : blocksToParse;
       let txReceived = false;
+
       blockList.forEach(async (blockNumber) => {
         const blockHash = await this.blockchainService.getBlockHash(blockNumber);
         const block = await this.blockchainService.getBlock(blockHash);
@@ -61,8 +61,8 @@ export class TxStatusMonitoringService extends WorkerHost implements OnApplicati
         }
       });
       if (!txReceived) {
-        this.logger.log(`Job ${job.id} failed (attempts=${job.attemptsMade})`);
-        return { success: false };
+        this.logger.error(`Job ${job.id} failed (attempts=${job.attemptsMade})`);
+        throw new Error(`Job ${job.id} failed (attempts=${job.attemptsMade})`);
       }
 
       this.logger.verbose(`Successfully completed job ${job.id}`);
