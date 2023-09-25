@@ -29,7 +29,6 @@ export class IPFSPublisher {
   async processSingleBatch(providerKeys: KeyringPair, tx: SubmittableExtrinsic<'rxjs', ISubmittableResult>): Promise<Hash> {
     this.logger.debug(`Submitting tx of size ${tx.length}`);
     try {
-      const currrentEpoch = await this.blockchainService.getCurrentCapacityEpoch();
       const [txHash, eventMap] = await this.blockchainService
         .createExtrinsic({ pallet: 'frequencyTxPayment', extrinsic: 'payWithCapacity' }, { eventPallet: 'messages', event: 'MessagesStored' }, providerKeys, tx)
         .signAndSend();
