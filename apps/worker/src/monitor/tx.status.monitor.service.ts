@@ -44,6 +44,23 @@ export class TxStatusMonitoringService extends WorkerHost implements OnApplicati
   async process(job: Job<ITxMonitorJob, any, string>): Promise<any> {
     this.logger.log(`Processing job ${job.id} of type ${job.name}`);
     try {
+      const totalBlockToParse = BigInt(100);
+      const lastFinaledBlockNumber = job.data.lastFinalizedBlockNumber;
+      let startBlock = lastFinaledBlockNumber;
+      let txReceived = false;
+      while (startBlock < startBlock + totalBlockToParse) {
+        const blockHash = await this.blockchainService.getBlockHash(startBlock);
+        const block = await this.blockchainService.getBlock(blockHash);
+        const txInfo = block.block.extrinsics.filter((extrinsic) =>  extrinsic.hash === job.data.txHash);
+        if (txInfo.length === 1) {
+          const tx = txInfo[0];
+          txReceived = tx.isSigned;
+          // TODO - handle capacity, epoch capacity, etc.
+          // TODO - handle next step after a successful tx
+        }
+        startBlock = startBlock + 1n;
+      }
+      
       this.logger.verbose(`Successfully completed job ${job.id}`);
       return { success: true };
     } catch (e) {
