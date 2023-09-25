@@ -101,7 +101,7 @@ describe('AppController E2E request verification!', () => {
         .expect(202)
         .expect((res) => expect(res.text).toContain('referenceId')));
 
-    it('valid request with uploaded assets should work!', async () => {
+    it('valid broadcast request with uploaded assets should work!', async () => {
       const file = Buffer.from('g'.repeat(30 * 1000 * 1000)); // 30MB
       const response = await request(app.getHttpServer()).put(`/api/asset/upload`).attach('files', file, 'file1.jpg').expect(202);
       await sleep(1000);
@@ -815,6 +815,11 @@ describe('AppController E2E request verification!', () => {
         .expect(200)
         .expect((res) => expect(Buffer.from(res.body)).toEqual(Buffer.from(buffer)));
     }, 15000);
+
+    it('not uploaded asset should return not found', async () => {
+      const assetId = 'bafybeieva67sj7hiiywi4kxsamcc2t2y2pptni2ki6gu63azj3pkznbzna';
+      return request(app.getHttpServer()).get(`/api/dev/asset/${assetId}`).expect(404);
+    });
   });
 
   afterEach(async () => {
