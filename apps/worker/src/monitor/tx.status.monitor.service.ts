@@ -44,23 +44,27 @@ export class TxStatusMonitoringService extends WorkerHost implements OnApplicati
   async process(job: Job<ITxMonitorJob, any, string>): Promise<any> {
     this.logger.log(`Processing job ${job.id} of type ${job.name}`);
     try {
-      const totalBlockToParse = BigInt(100);
+      const totalBlockToParse = BigInt(100); // TODO: make this configurable
       const lastFinaledBlockNumber = job.data.lastFinalizedBlockNumber;
-      let startBlock = lastFinaledBlockNumber;
-      let txReceived = false;
-      while (startBlock < startBlock + totalBlockToParse) {
-        const blockHash = await this.blockchainService.getBlockHash(startBlock);
-        const block = await this.blockchainService.getBlock(blockHash);
-        const txInfo = block.block.extrinsics.filter((extrinsic) =>  extrinsic.hash === job.data.txHash);
-        if (txInfo.length === 1) {
-          const tx = txInfo[0];
-          txReceived = tx.isSigned;
-          // TODO - handle capacity, epoch capacity, etc.
-          // TODO - handle next step after a successful tx
-        }
-        startBlock = startBlock + 1n;
+      const blockList: bigint[] = [];
+      for (let i = 0; i < totalBlockToParse; i += 1) {
+        blockList.push(lastFinaledBlockNumber + BigInt(i));
       }
-      
+      let txReceived = false;
+      blockList.forEach(async (blockNumber) => {
+        const blockHash = await this.blockchainService.getBlockHash(blockNumber);
+        const block = await this.blockchainService.getBlock(blockHash);
+        const txInfo = block.block.extrinsics.filter((extrinsic) => extrinsic.hash === job.data.txHash);
+        if (txInfo.length === 1) {
+          // TODO: handle success with grace ;)
+          txReceived = true;
+        }
+      });
+      if (!txReceived) {
+        this.logger.log(`Job ${job.id} failed (attempts=${job.attemptsMade})`);
+        return { success: false };
+      }
+
       this.logger.verbose(`Successfully completed job ${job.id}`);
       return { success: true };
     } catch (e) {
