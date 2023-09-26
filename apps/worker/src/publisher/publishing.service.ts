@@ -77,7 +77,7 @@ export class PublishingService extends WorkerHost implements OnApplicationBootst
       txHash,
       publisherJobId: jobId,
     };
-    this.txReceiptQueue.add(`Tx Receipt Job - ${job.id}`, job, { jobId: job.id, removeOnFail: false, removeOnComplete: 100 });
+    await this.txReceiptQueue.add(`Tx Receipt Job - ${job.id}`, job, { jobId: job.id, removeOnFail: false, removeOnComplete: 100 });
   }
 
   private async checkCapacity(): Promise<void> {
