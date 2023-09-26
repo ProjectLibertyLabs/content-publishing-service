@@ -29,9 +29,13 @@ export class IPFSPublisher {
   async processSingleBatch(providerKeys: KeyringPair, tx: SubmittableExtrinsic<'rxjs', ISubmittableResult>): Promise<Hash> {
     this.logger.debug(`Submitting tx of size ${tx.length}`);
     try {
-      const [txHash, eventMap] = await this.blockchainService
-        .createExtrinsic({ pallet: 'frequencyTxPayment', extrinsic: 'payWithCapacity' }, { eventPallet: 'messages', event: 'MessagesStored' }, providerKeys, tx)
-        .signAndSend();
+      const ext = await this.blockchainService.createExtrinsic(
+        { pallet: 'frequencyTxPayment', extrinsic: 'payWithCapacity' },
+        { eventPallet: 'messages', event: 'MessagesStored' },
+        providerKeys,
+        tx,
+      );
+      const [txHash] = await ext.signAndSend();
       if (!txHash) {
         throw new Error('Tx hash is undefined');
       }

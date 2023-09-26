@@ -5,6 +5,7 @@ import { Job, Queue } from 'bullmq';
 import Redis from 'ioredis';
 import { EventEmitter2 } from '@nestjs/event-emitter';
 import { MILLISECONDS_PER_SECOND } from 'time-constants';
+import { Hash } from '@polkadot/types/interfaces';
 import { BlockchainService } from '../../../../libs/common/src/blockchain/blockchain.service';
 import { ConfigService } from '../../../../libs/common/src/config/config.service';
 import { ITxMonitorJob } from '../interfaces/status-monitor.interface';
@@ -20,6 +21,7 @@ export class TxStatusMonitoringService extends WorkerHost implements OnApplicati
 
   constructor(
     @InjectRedis() private cacheManager: Redis,
+    @InjectQueue(QueueConstants.TRANSACTION_RECEIPT_QUEUE_NAME) private txReceiptQueue,
     @InjectQueue(QueueConstants.PUBLISH_QUEUE_NAME) private publishQueue: Queue,
     private blockchainService: BlockchainService,
     private configService: ConfigService,
@@ -44,30 +46,21 @@ export class TxStatusMonitoringService extends WorkerHost implements OnApplicati
   async process(job: Job<ITxMonitorJob, any, string>): Promise<any> {
     this.logger.log(`Monitoring job ${job.id} of type ${job.name}`);
     try {
-      let blocksToParse = 100n;
-      const lastFinaledBlockNumber = (await this.blockchainService.getBlock(job.data.lastFinalizedBlockHash)).block.header.number.toBigInt();
+      const numberBlocksToParse = 100n;
+      const previousKnownBlockNumber = (await this.blockchainService.getBlock(job.data.lastFinalizedBlockHash)).block.header.number.toBigInt();
       const currentFinalizedBlockNumber = await this.blockchainService.getLatestFinalizedBlockNumber();
-      blocksToParse = blocksToParse > currentFinalizedBlockNumber - lastFinaledBlockNumber ? currentFinalizedBlockNumber - lastFinaledBlockNumber : blocksToParse;
-      let txReceived = false;
       const blockList: bigint[] = [];
-      for (let i = 0n; i < blocksToParse; i += 1n) {
-        blockList.push(lastFinaledBlockNumber + i);
+      for (let i = previousKnownBlockNumber; i <= currentFinalizedBlockNumber && i < previousKnownBlockNumber + numberBlocksToParse; i += 1n) {
+        blockList.push(i);
       }
+      const txReceived = await this.crawlBlockList(job.data.txHash, blockList);
 
-      blockList.forEach(async (blockNumber) => {
-        const blockHash = await this.blockchainService.getBlockHash(blockNumber);
-        const block = await this.blockchainService.getBlock(blockHash);
-        const txInfo = block.block.extrinsics.filter((extrinsic) => extrinsic.hash === job.data.txHash);
-        if (txInfo.length > 0) {
-          txReceived = true;
-          this.logger.verbose(`Found tx ${job.data.txHash} in block ${blockNumber} for publishQueue job ${job.data.publisherJobId}`);
-        }
-      });
-      if (!txReceived) {
-        throw new Error(`Job ${job.id} failed (attempts=${job.attemptsMade}) with error: Transaction not received after scanning ${blocksToParse} blocks`);
+      if (txReceived) {
+        this.logger.verbose(`Successfully completed job ${job.id}`);
+        return { success: true };
       }
-      this.logger.verbose(`Successfully completed job ${job.id}`);
-      return { success: true };
+      this.logger.verbose(`Failed to complete job ${job.id}`);
+      return { success: false };
     } catch (e) {
       this.logger.error(`Job ${job.id} failed (attempts=${job.attemptsMade}) with error: ${e}`);
       throw e;
@@ -80,6 +73,21 @@ export class TxStatusMonitoringService extends WorkerHost implements OnApplicati
   @OnWorkerEvent('completed')
   onCompleted() {
     // do some stuff
+  }
+
+  private async crawlBlockList(txHash: Hash, blockList: bigint[]): Promise<boolean> {
+    blockList.filter(async (blockNumber) => {
+      const blockHash = await this.blockchainService.getBlockHash(blockNumber);
+      const block = await this.blockchainService.getBlock(blockHash);
+      const txInfo = block.block.extrinsics.filter((extrinsic) => extrinsic.hash.toString() === txHash.toString());
+      this.logger.debug(`Extrinsics: ${block.block.extrinsics[0]}`);
+      if (txInfo.length > 0) {
+        this.logger.verbose(`Found tx ${txHash} in block ${blockNumber}`);
+        return true;
+      }
+      return false;
+    });
+    return blockList.length > 0;
   }
 
   private async setEpochCapacity(totalCapacityUsed: { [key: string]: bigint }): Promise<void> {
