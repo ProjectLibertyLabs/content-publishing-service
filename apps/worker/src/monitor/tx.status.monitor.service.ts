@@ -42,44 +42,34 @@ export class TxStatusMonitoringService extends WorkerHost implements OnApplicati
   }
 
   async process(job: Job<ITxMonitorJob, any, string>): Promise<any> {
-    this.logger.log(`Processing job ${job.id} of type ${job.name}`);
+    this.logger.log(`Monitoring job ${job.id} of type ${job.name}`);
     try {
       let blocksToParse = 100n;
-      const lastFinaledBlockNumber = job.data.lastFinalizedBlockNumber;
-      const currentFinalizedBlockNumber = await this.blockchainService.getLatestFinalizedBlockHash();
-      const blockList: bigint[] = [];
+      const lastFinaledBlockNumber = (await this.blockchainService.getBlock(job.data.lastFinalizedBlockHash)).block.header.number.toBigInt();
+      const currentFinalizedBlockNumber = await this.blockchainService.getLatestFinalizedBlockNumber();
       blocksToParse = blocksToParse > currentFinalizedBlockNumber - lastFinaledBlockNumber ? currentFinalizedBlockNumber - lastFinaledBlockNumber : blocksToParse;
       let txReceived = false;
+      const blockList: bigint[] = [];
+      for (let i = 0n; i < blocksToParse; i += 1n) {
+        blockList.push(lastFinaledBlockNumber + i);
+      }
 
       blockList.forEach(async (blockNumber) => {
         const blockHash = await this.blockchainService.getBlockHash(blockNumber);
         const block = await this.blockchainService.getBlock(blockHash);
         const txInfo = block.block.extrinsics.filter((extrinsic) => extrinsic.hash === job.data.txHash);
-        if (txInfo.length === 1) {
+        if (txInfo.length > 0) {
           txReceived = true;
-          this.logger.debug(`Found tx ${job.data.txHash} in block ${blockNumber} for publishQueue job ${job.data.publisherJobId}`);
-          await this.publishQueue.remove(job.data.publisherJobId);
+          this.logger.verbose(`Found tx ${job.data.txHash} in block ${blockNumber} for publishQueue job ${job.data.publisherJobId}`);
         }
       });
       if (!txReceived) {
-        this.logger.error(`Job ${job.id} failed (attempts=${job.attemptsMade})`);
-        const publishJob = await this.publishQueue.getJob(job.data.publisherJobId);
-        if(!publishJob) {
-          this.logger.error(`Publish job ${job.data.publisherJobId} not found`);
-          throw new Error(`Publish job ${job.data.publisherJobId} not found`);
-        }
-        // delay till next capacity epoch
-        const capacity = await this.blockchainService.capacityInfo(this.configService.getProviderId());
-        const blocksRemaining = capacity.nextEpochStart - capacity.currentBlockNumber;
-        const delay = blocksRemaining * SECONDS_PER_BLOCK * MILLISECONDS_PER_SECOND;
-        this.publishQueue.add(publishJob.name, publishJob.data, { delay });
-        throw new Error(`Job ${job.id} failed (attempts=${job.attemptsMade})`);
+        throw new Error(`Job ${job.id} failed (attempts=${job.attemptsMade}) with error: Transaction not received after scanning ${blocksToParse} blocks`);
       }
-
       this.logger.verbose(`Successfully completed job ${job.id}`);
       return { success: true };
     } catch (e) {
-      this.logger.error(`Job ${job.id} failed (attempts=${job.attemptsMade})`);
+      this.logger.error(`Job ${job.id} failed (attempts=${job.attemptsMade}) with error: ${e}`);
       throw e;
     } finally {
       // do some stuff

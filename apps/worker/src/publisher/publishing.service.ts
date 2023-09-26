@@ -6,7 +6,7 @@ import Redis from 'ioredis';
 import { SchedulerRegistry } from '@nestjs/schedule';
 import { EventEmitter2, OnEvent } from '@nestjs/event-emitter';
 import { MILLISECONDS_PER_SECOND } from 'time-constants';
-import { Hash } from '@polkadot/types/interfaces';
+import { BlockHash, Hash } from '@polkadot/types/interfaces';
 import { BlockchainService } from '../../../../libs/common/src/blockchain/blockchain.service';
 import { ConfigService } from '../../../../libs/common/src/config/config.service';
 import { IPublisherJob } from '../interfaces/publisher-job.interface';
@@ -53,13 +53,13 @@ export class PublishingService extends WorkerHost implements OnApplicationBootst
   async process(job: Job<IPublisherJob, any, string>): Promise<any> {
     this.logger.log(`Processing job ${job.id} of type ${job.name}`);
     try {
-      const currentBlockNumber = await this.blockchainService.getLatestFinalizedBlockHash();
+      const currentBlockHash = await this.blockchainService.getLatestFinalizedBlockHash();
       const txHash = await this.ipfsPublisher.publish(job.data);
-      await this.sendJobToTxReceiptQueue(job.id, txHash, currentBlockNumber);
+      await this.sendJobToTxReceiptQueue(job.id, txHash, currentBlockHash);
       this.logger.verbose(`Successfully completed job ${job.id}`);
       return { success: true };
     } catch (e) {
-      this.logger.error(`Job ${job.id} failed (attempts=${job.attemptsMade})`);
+      this.logger.error(`Job ${job.id} failed (attempts=${job.attemptsMade})error: ${e}`);
       if (e instanceof Error && e.message.includes('Inability to pay some fees')) {
         this.eventEmitter.emit('capacity.exhausted');
         // TODO: revisit this logic
@@ -70,14 +70,14 @@ export class PublishingService extends WorkerHost implements OnApplicationBootst
     }
   }
 
-  async sendJobToTxReceiptQueue(jobId: any, txHash: Hash, lastBlockNumber: bigint): Promise<void> {
+  async sendJobToTxReceiptQueue(jobId: any, txHash: Hash, lastFinalizedBlockHash: BlockHash): Promise<void> {
     const job: ITxMonitorJob = {
       id: txHash.toString(),
-      lastFinalizedBlockNumber: lastBlockNumber,
+      lastFinalizedBlockHash,
       txHash,
       publisherJobId: jobId,
     };
-    await this.txReceiptQueue.add(txHash.toString(), job, { removeOnComplete: true, removeOnFail: true });
+    this.txReceiptQueue.add(txHash.toString(), job, { removeOnComplete: true, removeOnFail: true });
   }
 
   private async checkCapacity(): Promise<void> {
