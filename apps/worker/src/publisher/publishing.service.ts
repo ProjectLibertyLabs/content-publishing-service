@@ -55,6 +55,7 @@ export class PublishingService extends WorkerHost implements OnApplicationBootst
     try {
       const currentBlockNumber = await this.blockchainService.getLatestFinalizedBlockHash();
       const txHash = await this.ipfsPublisher.publish(job.data);
+      await this.sendJobToTxReceiptQueue(job.id, txHash, currentBlockNumber);
       this.logger.verbose(`Successfully completed job ${job.id}`);
       return { success: true };
     } catch (e) {
