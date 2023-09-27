@@ -54,15 +54,15 @@ export class PublishingService extends WorkerHost implements OnApplicationBootst
     this.logger.log(`Processing job ${job.id} of type ${job.name}`);
     try {
       const currentBlockHash = await this.blockchainService.getLatestFinalizedBlockHash();
+      const currentCapacityEpoch = await this.blockchainService.getCurrentCapacityEpoch();
       const txHash = await this.ipfsPublisher.publish(job.data);
-      await this.sendJobToTxReceiptQueue(job.id, txHash, currentBlockHash);
+      await this.sendJobToTxReceiptQueue(job.id, txHash, currentBlockHash, currentCapacityEpoch.toString());
       this.logger.verbose(`Successfully completed job ${job.id}`);
       return { success: true };
     } catch (e) {
       this.logger.error(`Job ${job.id} failed (attempts=${job.attemptsMade})error: ${e}`);
       if (e instanceof Error && e.message.includes('Inability to pay some fees')) {
         this.eventEmitter.emit('capacity.exhausted');
-        // TODO: revisit this logic
       }
       throw e;
     } finally {
@@ -70,9 +70,10 @@ export class PublishingService extends WorkerHost implements OnApplicationBootst
     }
   }
 
-  async sendJobToTxReceiptQueue(jobId: any, txHash: Hash, lastFinalizedBlockHash: BlockHash): Promise<void> {
+  async sendJobToTxReceiptQueue(jobId: any, txHash: Hash, lastFinalizedBlockHash: BlockHash, epoch: string): Promise<void> {
     const job: ITxMonitorJob = {
       id: txHash.toString(),
+      epoch,
       lastFinalizedBlockHash,
       txHash,
       publisherJobId: jobId,

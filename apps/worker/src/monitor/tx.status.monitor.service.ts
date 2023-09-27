@@ -5,7 +5,8 @@ import { Job, Queue } from 'bullmq';
 import Redis from 'ioredis';
 import { EventEmitter2 } from '@nestjs/event-emitter';
 import { MILLISECONDS_PER_SECOND } from 'time-constants';
-import { Hash } from '@polkadot/types/interfaces';
+import { BlockHash, Hash } from '@polkadot/types/interfaces';
+import { map, tap, timeout } from 'rxjs';
 import { BlockchainService } from '../../../../libs/common/src/blockchain/blockchain.service';
 import { ConfigService } from '../../../../libs/common/src/config/config.service';
 import { ITxMonitorJob } from '../interfaces/status-monitor.interface';
@@ -47,19 +48,19 @@ export class TxStatusMonitoringService extends WorkerHost implements OnApplicati
     this.logger.log(`Monitoring job ${job.id} of type ${job.name}`);
     try {
       const numberBlocksToParse = 100n;
+      const txCapacityEpoch = job.data.epoch;
       const previousKnownBlockNumber = (await this.blockchainService.getBlock(job.data.lastFinalizedBlockHash)).block.header.number.toBigInt();
       const currentFinalizedBlockNumber = await this.blockchainService.getLatestFinalizedBlockNumber();
       const blockList: bigint[] = [];
       for (let i = previousKnownBlockNumber; i <= currentFinalizedBlockNumber && i < previousKnownBlockNumber + numberBlocksToParse; i += 1n) {
         blockList.push(i);
       }
-      const txReceived = await this.crawlBlockList(job.data.txHash, blockList);
+      const txBlockHash = await this.crawlBlockList(job.data.txHash, txCapacityEpoch, blockList);
 
-      if (txReceived) {
+      if (txBlockHash) {
         this.logger.verbose(`Successfully completed job ${job.id}`);
         return { success: true };
       }
-      this.logger.verbose(`Failed to complete job ${job.id}`);
       return { success: false };
     } catch (e) {
       this.logger.error(`Job ${job.id} failed (attempts=${job.attemptsMade}) with error: ${e}`);
@@ -75,38 +76,55 @@ export class TxStatusMonitoringService extends WorkerHost implements OnApplicati
     // do some stuff
   }
 
-  private async crawlBlockList(txHash: Hash, blockList: bigint[]): Promise<boolean> {
-    blockList.filter(async (blockNumber) => {
-      const blockHash = await this.blockchainService.getBlockHash(blockNumber);
-      const block = await this.blockchainService.getBlock(blockHash);
-      const txInfo = block.block.extrinsics.filter((extrinsic) => extrinsic.hash.toString() === txHash.toString());
-      this.logger.debug(`Extrinsics: ${block.block.extrinsics[0]}`);
-      if (txInfo.length > 0) {
-        this.logger.verbose(`Found tx ${txHash} in block ${blockNumber}`);
-        return true;
-      }
-      return false;
-    });
-    return blockList.length > 0;
+  private async crawlBlockList(txHash: Hash, epoch: string, blockList: bigint[]): Promise<BlockHash | undefined> {
+    // Use Promise.all to await all filter operations before returning undefined
+    await Promise.all(
+      blockList.map(async (blockNumber) => {
+        const blockHash = await this.blockchainService.getBlockHash(blockNumber);
+        const block = await this.blockchainService.getBlock(blockHash);
+        const txInfo = block.block.extrinsics.filter((extrinsic) => extrinsic.hash.toString() === txHash.toString());
+        this.logger.debug(`Extrinsics: ${block.block.extrinsics[0]}`);
+
+        if (txInfo.length > 0) {
+          this.logger.debug(`Found tx ${txHash} in block ${blockNumber}`);
+          const at = await this.blockchainService.api.at(blockHash.toHex());
+          const events = await at.query.system.events();
+          events.subscribe((records) => {
+            records.forEach(async (record) => {
+              const { event } = record;
+              const eventName = event.section;
+              const { method } = event;
+              const { data } = event;
+              this.logger.error(`Received event: ${eventName} ${method} ${data}`);
+              if (eventName.search('capacity') !== -1 && method.search('Withdrawn') !== -1) {
+                const capacityWithDrawn = BigInt(data[1].toString());
+                this.logger.debug(`Capacity withdrawn: ${capacityWithDrawn}`);
+                this.setEpochCapacity(epoch, capacityWithDrawn);
+              }
+            });
+          });
+        }
+      }),
+    );
+
+    return undefined;
   }
 
-  private async setEpochCapacity(totalCapacityUsed: { [key: string]: bigint }): Promise<void> {
-    Object.entries(totalCapacityUsed).forEach(async ([epoch, capacityUsed]) => {
-      const epochCapacityKey = `epochCapacity:${epoch}`;
+  private async setEpochCapacity(epoch: string, capacityWithdrew: bigint) {
+    const epochCapacityKey = `epochCapacity:${epoch}`;
 
-      try {
-        const epochCapacity = BigInt((await this.cacheManager.get(epochCapacityKey)) ?? 0);
-        const newEpochCapacity = epochCapacity + capacityUsed;
+    try {
+      const epochCapacity = BigInt((await this.cacheManager.get(epochCapacityKey)) ?? 0);
+      const newEpochCapacity = epochCapacity + capacityWithdrew;
 
-        const epochDurationBlocks = await this.blockchainService.getCurrentEpochLength();
-        const epochDuration = epochDurationBlocks * SECONDS_PER_BLOCK * MILLISECONDS_PER_SECOND;
+      const epochDurationBlocks = await this.blockchainService.getCurrentEpochLength();
+      const epochDuration = epochDurationBlocks * SECONDS_PER_BLOCK * MILLISECONDS_PER_SECOND;
 
-        await this.cacheManager.setex(epochCapacityKey, epochDuration, newEpochCapacity.toString());
-      } catch (error) {
-        this.logger.error(`Error setting epoch capacity: ${error}`);
+      await this.cacheManager.setex(epochCapacityKey, epochDuration, newEpochCapacity.toString());
+    } catch (error) {
+      this.logger.error(`Error setting epoch capacity: ${error}`);
 
-        throw error;
-      }
-    });
+      throw error;
+    }
   }
 }
