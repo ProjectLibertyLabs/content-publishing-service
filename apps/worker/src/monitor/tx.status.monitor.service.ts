@@ -82,10 +82,10 @@ export class TxStatusMonitoringService extends WorkerHost implements OnApplicati
       blockList.map(async (blockNumber) => {
         const blockHash = await this.blockchainService.getBlockHash(blockNumber);
         const block = await this.blockchainService.getBlock(blockHash);
-        const txInfo = block.block.extrinsics.filter((extrinsic) => extrinsic.hash.toString() === txHash.toString());
+        const txInfo = block.block.extrinsics.find((extrinsic) => extrinsic.hash.toString() === txHash.toString());
         this.logger.debug(`Extrinsics: ${block.block.extrinsics[0]}`);
 
-        if (txInfo.length > 0) {
+        if (txInfo !== undefined) {
           this.logger.debug(`Found tx ${txHash} in block ${blockNumber}`);
           const at = await this.blockchainService.api.at(blockHash.toHex());
           const events = await at.query.system.events();
