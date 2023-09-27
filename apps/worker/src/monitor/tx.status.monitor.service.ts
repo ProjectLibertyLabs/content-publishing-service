@@ -95,7 +95,7 @@ export class TxStatusMonitoringService extends WorkerHost implements OnApplicati
               const eventName = event.section;
               const { method } = event;
               const { data } = event;
-              this.logger.error(`Received event: ${eventName} ${method} ${data}`);
+              this.logger.debug(`Received event: ${eventName} ${method} ${data}`);
               if (eventName.search('capacity') !== -1 && method.search('Withdrawn') !== -1) {
                 const capacityWithDrawn = BigInt(data[1].toString());
                 this.logger.debug(`Capacity withdrawn: ${capacityWithDrawn}`);
