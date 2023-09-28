@@ -56,7 +56,7 @@ export class PublishingService extends WorkerHost implements OnApplicationBootst
       const currentBlockHash = await this.blockchainService.getLatestFinalizedBlockHash();
       const currentCapacityEpoch = await this.blockchainService.getCurrentCapacityEpoch();
       const txHash = await this.ipfsPublisher.publish(job.data);
-      await this.sendJobToTxReceiptQueue(job.id, txHash, currentBlockHash, currentCapacityEpoch.toString());
+      await this.sendJobToTxReceiptQueue(job.data, txHash, currentBlockHash, currentCapacityEpoch.toString());
       this.logger.verbose(`Successfully completed job ${job.id}`);
       return { success: true };
     } catch (e) {
@@ -70,13 +70,13 @@ export class PublishingService extends WorkerHost implements OnApplicationBootst
     }
   }
 
-  async sendJobToTxReceiptQueue(jobId: any, txHash: Hash, lastFinalizedBlockHash: BlockHash, epoch: string): Promise<void> {
+  async sendJobToTxReceiptQueue(jobData: IPublisherJob, txHash: Hash, lastFinalizedBlockHash: BlockHash, epoch: string): Promise<void> {
     const job: ITxMonitorJob = {
       id: txHash.toString(),
       epoch,
       lastFinalizedBlockHash,
       txHash,
-      publisherJobId: jobId,
+      referencePublishJob: jobData,
     };
     // add a delay of 1 block to allow the tx reciept to go through before checking
     const delay = 1 * SECONDS_PER_BLOCK * MILLISECONDS_PER_SECOND;

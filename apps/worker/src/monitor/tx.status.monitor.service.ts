@@ -12,6 +12,7 @@ import { ConfigService } from '../../../../libs/common/src/config/config.service
 import { ITxMonitorJob } from '../interfaces/status-monitor.interface';
 import { QueueConstants } from '../../../../libs/common/src';
 import { SECONDS_PER_BLOCK } from '../../../../libs/common/src/constants';
+import { BlockchainConstants } from '../../../../libs/common/src/blockchain/blockchain-constants';
 
 @Injectable()
 @Processor(QueueConstants.TRANSACTION_RECEIPT_QUEUE_NAME, {
@@ -47,7 +48,7 @@ export class TxStatusMonitoringService extends WorkerHost implements OnApplicati
   async process(job: Job<ITxMonitorJob, any, string>): Promise<any> {
     this.logger.log(`Monitoring job ${job.id} of type ${job.name}`);
     try {
-      const numberBlocksToParse = 100n;
+      const numberBlocksToParse = BlockchainConstants.NUMBER_BLOCKS_TO_CRAWL;
       const txCapacityEpoch = job.data.epoch;
       const previousKnownBlockNumber = (await this.blockchainService.getBlock(job.data.lastFinalizedBlockHash)).block.header.number.toBigInt();
       const currentFinalizedBlockNumber = await this.blockchainService.getLatestFinalizedBlockNumber();
@@ -60,6 +61,19 @@ export class TxStatusMonitoringService extends WorkerHost implements OnApplicati
       if (txBlockHash) {
         this.logger.verbose(`Successfully completed job ${job.id}`);
         return { success: true };
+      }
+      if (job.attemptsMade >= (job.opts.attempts ?? 3)) {
+        this.logger.error(`Job failed max attempts ${job.id}, enqueueing to publish queue`);
+        await this.publishQueue.removeRepeatableByKey(job.data.referencePublishJob.id);
+        const publishJob = {
+          id: job.data.referencePublishJob.id,
+          schemaId: job.data.referencePublishJob.schemaId,
+          data: job.data.referencePublishJob.data,
+        };
+
+        const delay = 1 * MILLISECONDS_PER_SECOND * SECONDS_PER_BLOCK;
+        await this.publishQueue.add(QueueConstants.PUBLISH_QUEUE_NAME, publishJob, { delay });
+        return { success: false };
       }
       return { success: false };
     } catch (e) {
