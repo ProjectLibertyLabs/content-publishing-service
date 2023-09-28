@@ -62,8 +62,10 @@ export class TxStatusMonitoringService extends WorkerHost implements OnApplicati
         this.logger.verbose(`Successfully completed job ${job.id}`);
         return { success: true };
       }
-      if (job.attemptsMade >= (job.opts.attempts ?? 3)) {
-        this.logger.error(`Job failed max attempts ${job.id}, enqueueing to publish queue`);
+
+      // handle failure to find tx in block list after
+      if (!txBlockHash && job.attemptsMade >= (job.opts.attempts ?? 3)) {
+        this.logger.error(`Job failed max attempts ${job.attemptsMade}, enqueueing to publish queue`);
         await this.publishQueue.removeRepeatableByKey(job.data.referencePublishJob.id);
         const publishJob = {
           id: job.data.referencePublishJob.id,
@@ -91,37 +93,38 @@ export class TxStatusMonitoringService extends WorkerHost implements OnApplicati
   }
 
   private async crawlBlockList(txHash: Hash, epoch: string, blockList: bigint[]): Promise<BlockHash | undefined> {
-    // Use Promise.all to await all filter operations before returning undefined
-    await Promise.all(
-      blockList.map(async (blockNumber) => {
-        const blockHash = await this.blockchainService.getBlockHash(blockNumber);
-        const block = await this.blockchainService.getBlock(blockHash);
-        const txInfo = block.block.extrinsics.find((extrinsic) => extrinsic.hash.toString() === txHash.toString());
-        this.logger.debug(`Extrinsics: ${block.block.extrinsics[0]}`);
+    const txReceiptPromises: Promise<BlockHash | undefined>[] = blockList.map(async (blockNumber) => {
+      const blockHash = await this.blockchainService.getBlockHash(blockNumber);
+      const block = await this.blockchainService.getBlock(blockHash);
+      const txInfo = block.block.extrinsics.find((extrinsic) => extrinsic.hash.toString() === txHash.toString());
+      this.logger.debug(`Extrinsics: ${block.block.extrinsics[0]}`);
 
-        if (txInfo !== undefined) {
-          this.logger.debug(`Found tx ${txHash} in block ${blockNumber}`);
-          const at = await this.blockchainService.api.at(blockHash.toHex());
-          const events = await at.query.system.events();
-          events.subscribe((records) => {
-            records.forEach(async (record) => {
-              const { event } = record;
-              const eventName = event.section;
-              const { method } = event;
-              const { data } = event;
-              this.logger.debug(`Received event: ${eventName} ${method} ${data}`);
-              if (eventName.search('capacity') !== -1 && method.search('Withdrawn') !== -1) {
-                const capacityWithDrawn = BigInt(data[1].toString());
-                this.logger.debug(`Capacity withdrawn: ${capacityWithDrawn}`);
-                this.setEpochCapacity(epoch, capacityWithDrawn);
-              }
-            });
+      if (txInfo !== undefined) {
+        this.logger.verbose(`Found tx ${txHash} in block ${blockNumber}`);
+        const at = await this.blockchainService.api.at(blockHash.toHex());
+        const events = await at.query.system.events();
+        events.subscribe((records) => {
+          records.forEach(async (record) => {
+            const { event } = record;
+            const eventName = event.section;
+            const { method } = event;
+            const { data } = event;
+            this.logger.debug(`Received event: ${eventName} ${method} ${data}`);
+            if (eventName.search('capacity') !== -1 && method.search('Withdrawn') !== -1) {
+              const capacityWithDrawn = BigInt(data[1].toString());
+              this.logger.debug(`Capacity withdrawn: ${capacityWithDrawn}`);
+              this.setEpochCapacity(epoch, capacityWithDrawn);
+            }
           });
-        }
-      }),
-    );
+        });
+        return blockHash;
+      }
+      return undefined;
+    });
 
-    return undefined;
+    const results = await Promise.all(txReceiptPromises);
+    const result = results.find((blockHash) => blockHash !== undefined);
+    return result;
   }
 
   private async setEpochCapacity(epoch: string, capacityWithdrew: bigint) {
