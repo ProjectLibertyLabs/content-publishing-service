@@ -64,17 +64,10 @@ export class TxStatusMonitoringService extends WorkerHost implements OnApplicati
       }
 
       // handle failure to find tx in block list after
+      // TODO - handle requeing of publish job in case of failure 
+      // Issue: https://github.com/AmplicaLabs/content-publishing-service/issues/18
       if (!txBlockHash && job.attemptsMade >= (job.opts.attempts ?? 3)) {
-        this.logger.error(`Job failed max attempts ${job.attemptsMade}, enqueueing to publish queue`);
-        await this.publishQueue.removeRepeatableByKey(job.data.referencePublishJob.id);
-        const publishJob = {
-          id: job.data.referencePublishJob.id,
-          schemaId: job.data.referencePublishJob.schemaId,
-          data: job.data.referencePublishJob.data,
-        };
-
-        const delay = 1 * MILLISECONDS_PER_SECOND * SECONDS_PER_BLOCK;
-        await this.publishQueue.add(publishJob.id, publishJob, { delay });
+        this.logger.error(`Job ${job.id} failed after ${job.attemptsMade} attempts`);
         return { success: false };
       }
       throw new Error(`Job ${job.id} failed, retrying`);
