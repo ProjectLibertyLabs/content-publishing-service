@@ -75,7 +75,7 @@ export class TxStatusMonitoringService extends WorkerHost implements OnApplicati
         await this.publishQueue.add(QueueConstants.PUBLISH_QUEUE_NAME, publishJob, { delay });
         return { success: false };
       }
-      return { success: false };
+      throw new Error(`Job ${job.id} failed, retrying`);
     } catch (e) {
       this.logger.error(`Job ${job.id} failed (attempts=${job.attemptsMade}) with error: ${e}`);
       throw e;
