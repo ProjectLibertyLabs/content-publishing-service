@@ -74,7 +74,7 @@ export class TxStatusMonitoringService extends WorkerHost implements OnApplicati
         };
 
         const delay = 1 * MILLISECONDS_PER_SECOND * SECONDS_PER_BLOCK;
-        await this.publishQueue.add(QueueConstants.PUBLISH_QUEUE_NAME, publishJob, { delay });
+        await this.publishQueue.add(publishJob.id, publishJob, { delay });
         return { success: false };
       }
       throw new Error(`Job ${job.id} failed, retrying`);
