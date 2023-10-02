@@ -60,13 +60,13 @@ export class TxStatusMonitoringService extends WorkerHost implements OnApplicati
         (capacityWithDrawn: bigint) => this.setEpochCapacity(txCapacityEpoch, capacityWithDrawn),
         (moduleError: RegistryError) => this.handleMessagesFailure(job.id ?? job.data.id, moduleError),
       );
-
-      if (txResult.success) {
-        this.logger.verbose(`Successfully found submitted tx ${job.data.txHash} in block ${JSON.stringify(txResult.blockHash)}`);
+      if (!txResult.success && job.attemptsMade <= (job.opts.attempts ?? 3)) {
+        // throw to retry
+        throw new Error(`Tx not found in block list, retrying (attempts=${job.attemptsMade})`);
       }
       return { success: txResult.success };
     } catch (e) {
-      this.logger.error(`Job ${job.id} failed (attempts=${job.attemptsMade}) with error: ${e}`);
+      this.logger.error(e);
       throw e;
     } finally {
       // do some stuff
