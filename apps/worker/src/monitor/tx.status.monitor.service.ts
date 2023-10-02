@@ -111,6 +111,22 @@ export class TxStatusMonitoringService extends WorkerHost implements OnApplicati
       case 4: {
         break;
       }
+      // UnAuthorizedDelegate
+      case 5: {
+        break;
+      }
+      // InvalidPayloadLocation
+      case 6: {
+        break;
+      }
+      // UnsupportedCidVersion
+      case 7: {
+        break;
+      }
+      // InvalidCid
+      case 8: {
+        break;
+      }
       default: {
         this.logger.error(`Unknown module error ${moduleError}`);
         break;
