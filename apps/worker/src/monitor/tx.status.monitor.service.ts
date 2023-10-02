@@ -59,13 +59,10 @@ export class TxStatusMonitoringService extends WorkerHost implements OnApplicati
       const txBlockHash = await this.crawlBlockList(job.data.txHash, txCapacityEpoch, blockList);
 
       if (txBlockHash) {
-        this.logger.verbose(`Successfully completed job ${job.id}`);
+        this.logger.verbose(`Successfully found submitted tx ${job.data.txHash} in block ${txBlockHash}`);
         return { success: true };
       }
-
-      // handle failure to find tx in block list after
-      // TODO - handle requeing of publish job in case of failure 
-      // Issue: https://github.com/AmplicaLabs/content-publishing-service/issues/18
+      
       if (!txBlockHash && job.attemptsMade >= (job.opts.attempts ?? 3)) {
         this.logger.error(`Job ${job.id} failed after ${job.attemptsMade} attempts`);
         return { success: false };
@@ -96,6 +93,7 @@ export class TxStatusMonitoringService extends WorkerHost implements OnApplicati
         this.logger.verbose(`Found tx ${txHash} in block ${blockNumber}`);
         const at = await this.blockchainService.api.at(blockHash.toHex());
         const events = await at.query.system.events();
+        let isMessageSuccess = false;
         events.subscribe((records) => {
           records.forEach(async (record) => {
             const { event } = record;
@@ -108,9 +106,15 @@ export class TxStatusMonitoringService extends WorkerHost implements OnApplicati
               this.logger.debug(`Capacity withdrawn: ${capacityWithDrawn}`);
               this.setEpochCapacity(epoch, capacityWithDrawn);
             }
+            if (eventName.search('messages') !== -1 && method.search('MessageStored') !== -1) {
+              isMessageSuccess = true;
+            }
           });
         });
-        return blockHash;
+        if (isMessageSuccess) {
+          this.logger.verbose(`Successfully found submitted ipfs message ${txHash} in block ${blockHash}`);
+          return blockHash;
+        }
       }
       return undefined;
     });
