@@ -58,6 +58,7 @@ export class TxStatusMonitoringService extends WorkerHost implements OnApplicati
       const txBlockHash = await this.blockchainService.crawlBlockListForTx(
         job.data.txHash,
         blockList,
+        [{ pallet: 'messages', event: 'MessageStored' }],
         (capacityWithDrawn: bigint) => this.setEpochCapacity(txCapacityEpoch, capacityWithDrawn),
         (moduleError: RegistryError) => this.handleExtrinsicFailure(job.id ?? job.data.id, moduleError),
       );

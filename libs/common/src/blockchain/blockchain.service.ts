@@ -160,6 +160,7 @@ export class BlockchainService implements OnApplicationBootstrap, OnApplicationS
   public async crawlBlockListForTx(
     txHash: Hash,
     blockList: bigint[],
+    successEvents: [{ pallet: string; event: string }],
     capacityCallback: (capacityWithDrawn: bigint) => void,
     errorCallback: (moduleError: RegistryError) => void,
   ): Promise<BlockHash | undefined> {
@@ -190,7 +191,7 @@ export class BlockchainService implements OnApplicationBootstrap, OnApplicationS
               capacityCallback(capacityWithDrawn);
             }
 
-            if (eventName.search('messages') !== -1 && method.search('MessageStored') !== -1) {
+            if (successEvents.find((successEvent) => successEvent.pallet === eventName && successEvent.event === method)) {
               isMessageSuccess = true;
             }
 
