@@ -55,7 +55,7 @@ export class TxStatusMonitoringService extends WorkerHost implements OnApplicati
       for (let i = previousKnownBlockNumber; i <= currentFinalizedBlockNumber && i < previousKnownBlockNumber + numberBlocksToParse; i += 1n) {
         blockList.push(i);
       }
-      const txBlockHash = await this.crawlBlockList(job.data.txHash, txCapacityEpoch, blockList);
+      const txBlockHash = await this.crawlBlockList(job.data.txHash, txCapacityEpoch, blockList, (moduleError) => this.handleExtrinsicFailure(job.id ?? job.data.id, moduleError));
 
       if (txBlockHash) {
         this.logger.verbose(`Successfully found submitted tx ${job.data.txHash} in block ${txBlockHash}`);
@@ -81,7 +81,7 @@ export class TxStatusMonitoringService extends WorkerHost implements OnApplicati
     // do some stuff
   }
 
-  private async crawlBlockList(txHash: Hash, epoch: string, blockList: bigint[]): Promise<BlockHash | undefined> {
+  private async crawlBlockList(txHash: Hash, epoch: string, blockList: bigint[], errorCallback: any): Promise<BlockHash | undefined> {
     const txReceiptPromises: Promise<BlockHash | undefined>[] = blockList.map(async (blockNumber) => {
       const blockHash = await this.blockchainService.getBlockHash(blockNumber);
       const block = await this.blockchainService.getBlock(blockHash);
@@ -119,7 +119,7 @@ export class TxStatusMonitoringService extends WorkerHost implements OnApplicati
               const moduleThatErroed = dispatchError.asModule;
               const moduleError = dispatchError.registry.findMetaError(moduleThatErroed);
               this.logger.error(`Module error: ${moduleError}`);
-              this.handleExtrinsicFailure(txHash, moduleError);
+              errorCallback(moduleError);
             }
           });
         });
@@ -136,8 +136,8 @@ export class TxStatusMonitoringService extends WorkerHost implements OnApplicati
     return result;
   }
 
-  private async handleExtrinsicFailure(txHash: Hash, moduleError: any) {
-    // TODO take action based on error returned from blockchain
+  private async handleExtrinsicFailure(jobId: string, moduleError: any) {
+    this.logger.debug(`Handling extrinsic failure for job ${jobId} and module error ${moduleError}`);
   }
 
   private async setEpochCapacity(epoch: string, capacityWithdrew: bigint) {
