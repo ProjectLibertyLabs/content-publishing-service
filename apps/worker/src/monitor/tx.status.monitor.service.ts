@@ -5,7 +5,6 @@ import { Job, Queue } from 'bullmq';
 import Redis from 'ioredis';
 import { EventEmitter2 } from '@nestjs/event-emitter';
 import { MILLISECONDS_PER_SECOND } from 'time-constants';
-import { BlockHash, DispatchError, DispatchInfo, Hash } from '@polkadot/types/interfaces';
 import { BlockchainService } from '../../../../libs/common/src/blockchain/blockchain.service';
 import { ConfigService } from '../../../../libs/common/src/config/config.service';
 import { ITxMonitorJob } from '../interfaces/status-monitor.interface';
@@ -55,7 +54,12 @@ export class TxStatusMonitoringService extends WorkerHost implements OnApplicati
       for (let i = previousKnownBlockNumber; i <= currentFinalizedBlockNumber && i < previousKnownBlockNumber + numberBlocksToParse; i += 1n) {
         blockList.push(i);
       }
-      const txBlockHash = await this.crawlBlockList(job.data.txHash, txCapacityEpoch, blockList, (moduleError) => this.handleExtrinsicFailure(job.id ?? job.data.id, moduleError));
+      const txBlockHash = await this.blockchainService.crawlBlockListForTx(
+        job.data.txHash,
+        blockList,
+        (capacityWithDrawn: bigint) => this.setEpochCapacity(txCapacityEpoch, capacityWithDrawn),
+        (moduleError: any) => this.handleExtrinsicFailure(job.id ?? job.data.id, moduleError),
+      );
 
       if (txBlockHash) {
         this.logger.verbose(`Successfully found submitted tx ${job.data.txHash} in block ${txBlockHash}`);
@@ -79,61 +83,6 @@ export class TxStatusMonitoringService extends WorkerHost implements OnApplicati
   @OnWorkerEvent('completed')
   onCompleted() {
     // do some stuff
-  }
-
-  private async crawlBlockList(txHash: Hash, epoch: string, blockList: bigint[], errorCallback: any): Promise<BlockHash | undefined> {
-    const txReceiptPromises: Promise<BlockHash | undefined>[] = blockList.map(async (blockNumber) => {
-      const blockHash = await this.blockchainService.getBlockHash(blockNumber);
-      const block = await this.blockchainService.getBlock(blockHash);
-      const txInfo = block.block.extrinsics.find((extrinsic) => extrinsic.hash.toString() === txHash.toString());
-      this.logger.debug(`Extrinsics: ${block.block.extrinsics[0]}`);
-
-      if (txInfo !== undefined) {
-        this.logger.verbose(`Found tx ${txHash} in block ${blockNumber}`);
-        const at = await this.blockchainService.api.at(blockHash.toHex());
-        const events = await at.query.system.events();
-        let isMessageSuccess = false;
-        events.subscribe((records) => {
-          records.forEach(async (record) => {
-            const { event } = record;
-            const eventName = event.section;
-            const { method } = event;
-            const { data } = event;
-            this.logger.debug(`Received event: ${eventName} ${method} ${data}`);
-            if (eventName.search('capacity') !== -1 && method.search('Withdrawn') !== -1) {
-              const capacityWithDrawn = BigInt(data[1].toString());
-              this.logger.debug(`Capacity withdrawn: ${capacityWithDrawn}`);
-              this.setEpochCapacity(epoch, capacityWithDrawn);
-            }
-            if (eventName.search('messages') !== -1 && method.search('MessageStored') !== -1) {
-              isMessageSuccess = true;
-            }
-            // system.ExtrinsicFailed
-            if (eventName.search('system') !== -1 && method.search('ExtrinsicFailed') !== -1) {
-              isMessageSuccess = false;
-              const dispatchError = data[0] as DispatchError;
-              const dispatchInfo = data[1] as DispatchInfo;
-              this.logger.warn(`Extrinsic failed with error: ${dispatchError}`);
-              this.logger.warn(`Extrinsic failed with info: ${dispatchInfo}`);
-
-              const moduleThatErroed = dispatchError.asModule;
-              const moduleError = dispatchError.registry.findMetaError(moduleThatErroed);
-              this.logger.error(`Module error: ${moduleError}`);
-              errorCallback(moduleError);
-            }
-          });
-        });
-        if (isMessageSuccess) {
-          this.logger.verbose(`Successfully found submitted ipfs message ${txHash} in block ${blockHash}`);
-          return blockHash;
-        }
-      }
-      return undefined;
-    });
-
-    const results = await Promise.all(txReceiptPromises);
-    const result = results.find((blockHash) => blockHash !== undefined);
-    return result;
   }
 
   private async handleExtrinsicFailure(jobId: string, moduleError: any) {
