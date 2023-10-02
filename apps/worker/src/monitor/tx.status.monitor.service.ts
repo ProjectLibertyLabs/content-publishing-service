@@ -82,34 +82,34 @@ export class TxStatusMonitoringService extends WorkerHost implements OnApplicati
   private async handleMessagesFailure(jobId: string, moduleError: RegistryError) {
     this.logger.debug(`Handling extrinsic failure for job ${jobId} and error ${JSON.stringify(moduleError)}`);
     switch (moduleError.name) {
-      case "TooManyMessagesInBlock": {
+      case 'TooManyMessagesInBlock': {
         break;
       }
-      case "ExceedsMaxMessagePayloadSizeBytes": {
+      case 'ExceedsMaxMessagePayloadSizeBytes': {
         break;
       }
       // this error is returned from RPC
       // no action needed here
-      case "TypeConversionOverflow": {
+      case 'TypeConversionOverflow': {
         // eslint-disable-next-line no-case-declarations
         break;
       }
-      case "InvalidMessageSourceAccount": {
+      case 'InvalidMessageSourceAccount': {
         break;
       }
-      case "InvalidSchemaId": {
+      case 'InvalidSchemaId': {
         break;
       }
-      case "UnAuthorizedDelegate": {
+      case 'UnAuthorizedDelegate': {
         break;
       }
-      case "InvalidPayloadLocation": {
+      case 'InvalidPayloadLocation': {
         break;
       }
-      case "UnsupportedCidVersion": {
+      case 'UnsupportedCidVersion': {
         break;
       }
-      case "InvalidCid": {
+      case 'InvalidCid': {
         break;
       }
       default: {
