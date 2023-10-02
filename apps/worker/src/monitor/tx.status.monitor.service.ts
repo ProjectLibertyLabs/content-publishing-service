@@ -22,7 +22,7 @@ export class TxStatusMonitoringService extends WorkerHost implements OnApplicati
 
   constructor(
     @InjectRedis() private cacheManager: Redis,
-    @InjectQueue(QueueConstants.TRANSACTION_RECEIPT_QUEUE_NAME) private txReceiptQueue,
+    @InjectQueue(QueueConstants.TRANSACTION_RECEIPT_QUEUE_NAME) private txReceiptQueue: Queue,
     @InjectQueue(QueueConstants.PUBLISH_QUEUE_NAME) private publishQueue: Queue,
     private blockchainService: BlockchainService,
   ) {
@@ -81,43 +81,55 @@ export class TxStatusMonitoringService extends WorkerHost implements OnApplicati
 
   private async handleMessagesFailure(jobId: string, moduleError: RegistryError): Promise<boolean> {
     this.logger.debug(`Handling extrinsic failure for job ${jobId} and error ${JSON.stringify(moduleError)}`);
-    switch (moduleError.name) {
-      case 'TooManyMessagesInBlock': {
-        break;
-      }
-      case 'ExceedsMaxMessagePayloadSizeBytes': {
-        break;
-      }
-      // this error is returned from RPC
-      // no action needed here
-      case 'TypeConversionOverflow': {
-        // eslint-disable-next-line no-case-declarations
-        break;
-      }
-      case 'InvalidMessageSourceAccount': {
-        break;
-      }
-      case 'InvalidSchemaId': {
-        break;
-      }
-      case 'UnAuthorizedDelegate': {
-        break;
-      }
-      case 'InvalidPayloadLocation': {
-        break;
-      }
-      case 'UnsupportedCidVersion': {
-        break;
-      }
-      case 'InvalidCid': {
-        break;
-      }
-      default: {
-        this.logger.error(`Unknown module error ${moduleError}`);
-        break;
-      }
+    const txJob = (await this.txReceiptQueue.getJob(jobId)) as Job<ITxMonitorJob, any, string>;
+    if (!txJob) {
+      this.logger.error(`Job ${jobId} not found in tx receipt queue`);
+      return false;
     }
-    return false;
+    const blockDelay = 1 * SECONDS_PER_BLOCK * MILLISECONDS_PER_SECOND;
+
+    try {
+      switch (moduleError.name) {
+        case 'TooManyMessagesInBlock':
+          // Re-try the job in the publish queue with a block delay
+          await this.publishQueue.removeRepeatableByKey(txJob.data.referencePublishJob.id);
+          await this.publishQueue.add(txJob.data.referencePublishJob.id, txJob.data.referencePublishJob, { delay: blockDelay });
+          return false;
+        case 'ExceedsMaxMessagePayloadSizeBytes':
+          // Fail the job since this should never happen
+          return false;
+        case 'InvalidMessageSourceAccount':
+          // PROVIDER_ID is not set correctly
+          // Pause publishing entirely
+          this.publishQueue.pause();
+          return false;
+        case 'InvalidSchemaId':
+          // Fail the job since this should never happen, or is a protocol error
+          // pause publishing entirely
+          this.publishQueue.pause();
+          return false;
+        case 'UnAuthorizedDelegate':
+          // Re-try the job in the publish queue with a block delay, could be a signing error
+          await this.publishQueue.removeRepeatableByKey(txJob.data.referencePublishJob.id);
+          await this.publishQueue.add(txJob.data.referencePublishJob.id, txJob.data.referencePublishJob, { delay: blockDelay });
+          return false;
+        case 'InvalidPayloadLocation':
+          // Fail the job since this is probably a bug in the code or a bad tx
+          return false;
+        case 'UnsupportedCid':
+          // Fail the job since this needs to be looked at
+          return false;
+        case 'InvalidCid':
+          // Fail the job since this is a total failure
+          return false;
+        default:
+          this.logger.error(`Unknown module error ${moduleError}`);
+          return false;
+      }
+    } catch (error) {
+      this.logger.error(`Error handling module error: ${error}`);
+    }
+    return true;
   }
 
   private async setEpochCapacity(epoch: string, capacityWithdrew: bigint): Promise<boolean> {
