@@ -5,8 +5,7 @@ import { Job, Queue } from 'bullmq';
 import Redis from 'ioredis';
 import { EventEmitter2 } from '@nestjs/event-emitter';
 import { MILLISECONDS_PER_SECOND } from 'time-constants';
-import { BlockHash, Hash } from '@polkadot/types/interfaces';
-import { map, tap, timeout } from 'rxjs';
+import { BlockHash, DispatchError, DispatchInfo, Hash } from '@polkadot/types/interfaces';
 import { BlockchainService } from '../../../../libs/common/src/blockchain/blockchain.service';
 import { ConfigService } from '../../../../libs/common/src/config/config.service';
 import { ITxMonitorJob } from '../interfaces/status-monitor.interface';
@@ -62,7 +61,7 @@ export class TxStatusMonitoringService extends WorkerHost implements OnApplicati
         this.logger.verbose(`Successfully found submitted tx ${job.data.txHash} in block ${txBlockHash}`);
         return { success: true };
       }
-      
+
       if (!txBlockHash && job.attemptsMade >= (job.opts.attempts ?? 3)) {
         this.logger.error(`Job ${job.id} failed after ${job.attemptsMade} attempts`);
         return { success: false };
@@ -109,6 +108,19 @@ export class TxStatusMonitoringService extends WorkerHost implements OnApplicati
             if (eventName.search('messages') !== -1 && method.search('MessageStored') !== -1) {
               isMessageSuccess = true;
             }
+            // system.ExtrinsicFailed
+            if (eventName.search('system') !== -1 && method.search('ExtrinsicFailed') !== -1) {
+              isMessageSuccess = false;
+              const dispatchError = data[0] as DispatchError;
+              const dispatchInfo = data[1] as DispatchInfo;
+              this.logger.warn(`Extrinsic failed with error: ${dispatchError}`);
+              this.logger.warn(`Extrinsic failed with info: ${dispatchInfo}`);
+
+              const moduleThatErroed = dispatchError.asModule;
+              const moduleError = dispatchError.registry.findMetaError(moduleThatErroed);
+              this.logger.error(`Module error: ${moduleError}`);
+              this.handleExtrinsicFailure(txHash, moduleError);
+            }
           });
         });
         if (isMessageSuccess) {
@@ -122,6 +134,10 @@ export class TxStatusMonitoringService extends WorkerHost implements OnApplicati
     const results = await Promise.all(txReceiptPromises);
     const result = results.find((blockHash) => blockHash !== undefined);
     return result;
+  }
+
+  private async handleExtrinsicFailure(txHash: Hash, moduleError: any) {
+    // TODO take action based on error returned from blockchain
   }
 
   private async setEpochCapacity(epoch: string, capacityWithdrew: bigint) {
