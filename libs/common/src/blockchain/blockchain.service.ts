@@ -163,7 +163,7 @@ export class BlockchainService implements OnApplicationBootstrap, OnApplicationS
     successEvents: [{ pallet: string; event: string }],
     capacityCallback: (capacityWithDrawn: bigint) => void,
     errorCallback: (moduleError: RegistryError) => void,
-  ): Promise<BlockHash | undefined> {
+  ): Promise<{ success: boolean; blockHash?: BlockHash }> {
     const txReceiptPromises: Promise<BlockHash | undefined>[] = blockList.map(async (blockNumber) => {
       const blockHash = await this.getBlockHash(blockNumber);
       const block = await this.getBlock(blockHash);
@@ -200,7 +200,6 @@ export class BlockchainService implements OnApplicationBootstrap, OnApplicationS
               const dispatchError = data[0] as DispatchError;
               const moduleThatErrored = dispatchError.asModule;
               const moduleError = dispatchError.registry.findMetaError(moduleThatErrored);
-              this.logger.error(`Module error: ${moduleError}`);
               errorCallback(moduleError);
             }
           });
@@ -217,6 +216,6 @@ export class BlockchainService implements OnApplicationBootstrap, OnApplicationS
 
     const results = await Promise.all(txReceiptPromises);
     const result = results.find((blockHash) => blockHash !== undefined);
-    return result;
+    return { success: result !== undefined, blockHash: result };
   }
 }

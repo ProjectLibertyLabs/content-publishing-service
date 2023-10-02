@@ -53,7 +53,7 @@ export class TxStatusMonitoringService extends WorkerHost implements OnApplicati
       for (let i = previousKnownBlockNumber; i <= currentFinalizedBlockNumber && i < previousKnownBlockNumber + numberBlocksToParse; i += 1n) {
         blockList.push(i);
       }
-      const txBlockHash = await this.blockchainService.crawlBlockListForTx(
+      const txResult = await this.blockchainService.crawlBlockListForTx(
         job.data.txHash,
         blockList,
         [{ pallet: 'messages', event: 'MessageStored' }],
@@ -61,16 +61,10 @@ export class TxStatusMonitoringService extends WorkerHost implements OnApplicati
         (moduleError: RegistryError) => this.handleMessagesFailure(job.id ?? job.data.id, moduleError),
       );
 
-      if (txBlockHash) {
-        this.logger.verbose(`Successfully found submitted tx ${job.data.txHash} in block ${txBlockHash}`);
-        return { success: true };
+      if (txResult.success) {
+        this.logger.verbose(`Successfully found submitted tx ${job.data.txHash} in block ${JSON.stringify(txResult.blockHash)}`);
       }
-
-      if (!txBlockHash && job.attemptsMade >= (job.opts.attempts ?? 3)) {
-        this.logger.error(`Job ${job.id} failed after ${job.attemptsMade} attempts`);
-        return { success: false };
-      }
-      throw new Error(`Job ${job.id} failed, retrying`);
+      return { success: txResult.success };
     } catch (e) {
       this.logger.error(`Job ${job.id} failed (attempts=${job.attemptsMade}) with error: ${e}`);
       throw e;
@@ -86,45 +80,36 @@ export class TxStatusMonitoringService extends WorkerHost implements OnApplicati
   }
 
   private async handleMessagesFailure(jobId: string, moduleError: RegistryError) {
-    this.logger.debug(`Handling extrinsic failure for job ${jobId} and module error ${moduleError}`);
-    switch (moduleError.index) {
-      // TooManyMessagesInBlock
-      case 0: {
+    this.logger.debug(`Handling extrinsic failure for job ${jobId} and error ${JSON.stringify(moduleError)}`);
+    switch (moduleError.name) {
+      case "TooManyMessagesInBlock": {
         break;
       }
-      // ExceedsMaxMessagePayloadSizeBytes
-      case 1: {
+      case "ExceedsMaxMessagePayloadSizeBytes": {
         break;
       }
-      // TypeConversionOverflow
       // this error is returned from RPC
       // no action needed here
-      case 2: {
+      case "TypeConversionOverflow": {
         // eslint-disable-next-line no-case-declarations
         break;
       }
-      // InvalidMessageSourceAccount
-      case 3: {
+      case "InvalidMessageSourceAccount": {
         break;
       }
-      // InvalidSchemaId
-      case 4: {
+      case "InvalidSchemaId": {
         break;
       }
-      // UnAuthorizedDelegate
-      case 5: {
+      case "UnAuthorizedDelegate": {
         break;
       }
-      // InvalidPayloadLocation
-      case 6: {
+      case "InvalidPayloadLocation": {
         break;
       }
-      // UnsupportedCidVersion
-      case 7: {
+      case "UnsupportedCidVersion": {
         break;
       }
-      // InvalidCid
-      case 8: {
+      case "InvalidCid": {
         break;
       }
       default: {
