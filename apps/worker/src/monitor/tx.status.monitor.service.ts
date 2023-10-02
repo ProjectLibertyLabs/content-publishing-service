@@ -79,7 +79,7 @@ export class TxStatusMonitoringService extends WorkerHost implements OnApplicati
     // do some stuff
   }
 
-  private async handleMessagesFailure(jobId: string, moduleError: RegistryError) {
+  private async handleMessagesFailure(jobId: string, moduleError: RegistryError): Promise<boolean> {
     this.logger.debug(`Handling extrinsic failure for job ${jobId} and error ${JSON.stringify(moduleError)}`);
     switch (moduleError.name) {
       case 'TooManyMessagesInBlock': {
@@ -117,9 +117,10 @@ export class TxStatusMonitoringService extends WorkerHost implements OnApplicati
         break;
       }
     }
+    return false;
   }
 
-  private async setEpochCapacity(epoch: string, capacityWithdrew: bigint) {
+  private async setEpochCapacity(epoch: string, capacityWithdrew: bigint): Promise<boolean> {
     const epochCapacityKey = `epochCapacity:${epoch}`;
 
     try {
@@ -132,8 +133,8 @@ export class TxStatusMonitoringService extends WorkerHost implements OnApplicati
       await this.cacheManager.setex(epochCapacityKey, epochDuration, newEpochCapacity.toString());
     } catch (error) {
       this.logger.error(`Error setting epoch capacity: ${error}`);
-
-      throw error;
+      return false;
     }
+    return true;
   }
 }

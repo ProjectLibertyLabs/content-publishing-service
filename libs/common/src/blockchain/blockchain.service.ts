@@ -161,8 +161,8 @@ export class BlockchainService implements OnApplicationBootstrap, OnApplicationS
     txHash: Hash,
     blockList: bigint[],
     successEvents: [{ pallet: string; event: string }],
-    capacityCallback: (capacityWithDrawn: bigint) => void,
-    errorCallback: (moduleError: RegistryError) => void,
+    capacityCallback: (capacityWithDrawn: bigint) => Promise<boolean>,
+    errorCallback: (moduleError: RegistryError) => Promise<boolean>,
   ): Promise<{ success: boolean; blockHash?: BlockHash }> {
     const txReceiptPromises: Promise<BlockHash | undefined>[] = blockList.map(async (blockNumber) => {
       const blockHash = await this.getBlockHash(blockNumber);
@@ -185,22 +185,24 @@ export class BlockchainService implements OnApplicationBootstrap, OnApplicationS
             const { data } = event;
             this.logger.debug(`Received event: ${eventName} ${method} ${data}`);
 
+            // find capacity withdrawn event
             if (eventName.search('capacity') !== -1 && method.search('Withdrawn') !== -1) {
               capacityWithDrawn = BigInt(data[1].toString());
               this.logger.debug(`Capacity withdrawn: ${capacityWithDrawn}`);
-              capacityCallback(capacityWithDrawn);
+              isTxSuccess = await capacityCallback(capacityWithDrawn);
             }
 
+            // check custom success events
             if (successEvents.find((successEvent) => successEvent.pallet === eventName && successEvent.event === method)) {
               isTxSuccess = true;
             }
 
+            // check for system extrinsic failure
             if (eventName.search('system') !== -1 && method.search('ExtrinsicFailed') !== -1) {
-              isTxSuccess = false;
               const dispatchError = data[0] as DispatchError;
               const moduleThatErrored = dispatchError.asModule;
               const moduleError = dispatchError.registry.findMetaError(moduleThatErrored);
-              errorCallback(moduleError);
+              isTxSuccess = await errorCallback(moduleError);
             }
           });
         });
