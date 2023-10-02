@@ -161,63 +161,57 @@ export class BlockchainService implements OnApplicationBootstrap, OnApplicationS
     txHash: Hash,
     blockList: bigint[],
     successEvents: [{ pallet: string; event: string }],
-    capacityCallback: (capacityWithDrawn: bigint) => Promise<void>,
-    errorCallback: (moduleError: RegistryError) => Promise<void>,
-  ): Promise<{ success: boolean; blockHash?: BlockHash }> {
-    const txReceiptPromises: Promise<BlockHash | undefined>[] = blockList.map(async (blockNumber) => {
-      const blockHash = await this.getBlockHash(blockNumber);
-      const block = await this.getBlock(blockHash);
-      const txInfo = block.block.extrinsics.find((extrinsic) => extrinsic.hash.toString() === txHash.toString());
-      this.logger.debug(`Extrinsics: ${block.block.extrinsics[0]}`);
+  ): Promise<{ success: boolean; blockHash?: BlockHash; capacityWithDrawn?: bigint; error?: RegistryError }> {
+    const txReceiptPromises: Promise<{ success: boolean; blockHash?: BlockHash; capacityWithDrawn?: bigint; error?: RegistryError } | undefined>[] = blockList.map(
+      async (blockNumber) => {
+        const blockHash = await this.getBlockHash(blockNumber);
+        const block = await this.getBlock(blockHash);
+        const txInfo = block.block.extrinsics.find((extrinsic) => extrinsic.hash.toString() === txHash.toString());
+        this.logger.debug(`Extrinsics: ${block.block.extrinsics[0]}`);
 
-      if (txInfo !== undefined) {
-        this.logger.verbose(`Found tx ${txHash} in block ${blockNumber}`);
-        const at = await this.api.at(blockHash.toHex());
-        const events = await at.query.system.events();
-        let isTxSuccess = false;
-        let capacityWithDrawn: bigint = 0n;
+        if (txInfo !== undefined) {
+          this.logger.verbose(`Found tx ${txHash} in block ${blockNumber}`);
+          const at = await this.api.at(blockHash.toHex());
+          const events = await at.query.system.events();
+          let isTxSuccess = false;
+          let totalBlockCapacity: bigint = 0n;
+          let txError: RegistryError | undefined;
+          events.subscribe((records) => {
+            records.forEach(async (record) => {
+              const { event } = record;
+              const eventName = event.section;
+              const { method } = event;
+              const { data } = event;
+              this.logger.debug(`Received event: ${eventName} ${method} ${data}`);
 
-        events.subscribe((records) => {
-          records.forEach(async (record) => {
-            const { event } = record;
-            const eventName = event.section;
-            const { method } = event;
-            const { data } = event;
-            this.logger.debug(`Received event: ${eventName} ${method} ${data}`);
+              // find capacity withdrawn event
+              if (eventName.search('capacity') !== -1 && method.search('Withdrawn') !== -1) {
+                totalBlockCapacity += BigInt(data[1].toString());
+              }
 
-            // find capacity withdrawn event
-            if (eventName.search('capacity') !== -1 && method.search('Withdrawn') !== -1) {
-              capacityWithDrawn = BigInt(data[1].toString());
-              this.logger.debug(`Capacity withdrawn: ${capacityWithDrawn}`);
-              capacityCallback(capacityWithDrawn);
-            }
+              // check custom success events
+              if (successEvents.find((successEvent) => successEvent.pallet === eventName && successEvent.event === method)) {
+                isTxSuccess = true;
+              }
 
-            // check custom success events
-            if (successEvents.find((successEvent) => successEvent.pallet === eventName && successEvent.event === method)) {
-              isTxSuccess = true;
-            }
-
-            // check for system extrinsic failure
-            if (eventName.search('system') !== -1 && method.search('ExtrinsicFailed') !== -1) {
-              const dispatchError = data[0] as DispatchError;
-              const moduleThatErrored = dispatchError.asModule;
-              const moduleError = dispatchError.registry.findMetaError(moduleThatErrored);
-              errorCallback(moduleError);
-            }
+              // check for system extrinsic failure
+              if (eventName.search('system') !== -1 && method.search('ExtrinsicFailed') !== -1) {
+                const dispatchError = data[0] as DispatchError;
+                const moduleThatErrored = dispatchError.asModule;
+                const moduleError = dispatchError.registry.findMetaError(moduleThatErrored);
+                txError = moduleError;
+                this.logger.error(`Extrinsic failed with error: ${moduleError}`);
+              }
+            });
           });
-        });
-
-        if (isTxSuccess) {
-          this.logger.verbose(`Successfully found tx ${txHash} in block ${blockNumber}`);
-          return blockHash;
+          return { success: isTxSuccess, blockHash, capacityWithDrawn: totalBlockCapacity, error: txError };
         }
-      }
-
-      return undefined;
-    });
+        return undefined;
+      },
+    );
 
     const results = await Promise.all(txReceiptPromises);
     const result = results.find((blockHash) => blockHash !== undefined);
-    return { success: result !== undefined, blockHash: result };
+    return result ?? { success: false };
   }
 }

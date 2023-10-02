@@ -53,17 +53,16 @@ export class TxStatusMonitoringService extends WorkerHost implements OnApplicati
       for (let i = previousKnownBlockNumber; i <= currentFinalizedBlockNumber && i < previousKnownBlockNumber + numberBlocksToParse; i += 1n) {
         blockList.push(i);
       }
-      const txResult = await this.blockchainService.crawlBlockListForTx(
-        job.data.txHash,
-        blockList,
-        [{ pallet: 'messages', event: 'MessageStored' }],
-        (capacityWithDrawn: bigint) => this.setEpochCapacity(txCapacityEpoch, capacityWithDrawn),
-        (moduleError: RegistryError) => this.handleMessagesFailure(job.id ?? job.data.id, moduleError),
-      );
-      if (!txResult.success && job.attemptsMade <= (job.opts.attempts ?? 3)) {
-        // throw to retry
+      const txResult = await this.blockchainService.crawlBlockListForTx(job.data.txHash, blockList, [{ pallet: 'messages', event: 'MessageStored' }]);
+      if (!txResult.blockHash && !txResult.error && job.attemptsMade <= (job.opts.attempts ?? 3)) {
         throw new Error(`Tx not found in block list, retrying (attempts=${job.attemptsMade})`);
       }
+
+      // take actions on error and fail the job
+      if (txResult.error) {
+        await this.handleMessagesFailure(job.data.id, txResult.error);
+      }
+      this.setEpochCapacity(txCapacityEpoch, txResult.capacityWithDrawn ?? 0n);
       return { success: txResult.success };
     } catch (e) {
       this.logger.error(e);
