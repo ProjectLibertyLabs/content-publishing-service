@@ -157,4 +157,8 @@ export class BlockchainService implements OnApplicationBootstrap, OnApplicationS
     const schema: PalletSchemasSchema = await this.query('schemas', 'schemas', schemaId);
     return schema;
   }
+
+  public async getNonce(account: Uint8Array): Promise<number> {
+    return this.rpc('system', 'accountNextIndex', account);
+  }
 }
