@@ -11,6 +11,7 @@ import { ITxMonitorJob } from '../interfaces/status-monitor.interface';
 import { QueueConstants } from '../../../../libs/common/src';
 import { SECONDS_PER_BLOCK } from '../../../../libs/common/src/constants';
 import { BlockchainConstants } from '../../../../libs/common/src/blockchain/blockchain-constants';
+import { RegistryError } from '@polkadot/types/types';
 
 @Injectable()
 @Processor(QueueConstants.TRANSACTION_RECEIPT_QUEUE_NAME, {
@@ -58,7 +59,7 @@ export class TxStatusMonitoringService extends WorkerHost implements OnApplicati
         job.data.txHash,
         blockList,
         (capacityWithDrawn: bigint) => this.setEpochCapacity(txCapacityEpoch, capacityWithDrawn),
-        (moduleError: any) => this.handleExtrinsicFailure(job.id ?? job.data.id, moduleError),
+        (moduleError: RegistryError) => this.handleExtrinsicFailure(job.id ?? job.data.id, moduleError),
       );
 
       if (txBlockHash) {
@@ -85,7 +86,7 @@ export class TxStatusMonitoringService extends WorkerHost implements OnApplicati
     // do some stuff
   }
 
-  private async handleExtrinsicFailure(jobId: string, moduleError: any) {
+  private async handleExtrinsicFailure(jobId: string, moduleError: RegistryError) {
     this.logger.debug(`Handling extrinsic failure for job ${jobId} and module error ${moduleError}`);
   }
 

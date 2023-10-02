@@ -6,7 +6,7 @@ import { options } from '@frequency-chain/api-augment';
 import { KeyringPair } from '@polkadot/keyring/types';
 import { BlockHash, BlockNumber, DispatchError, DispatchInfo, Hash, SignedBlock } from '@polkadot/types/interfaces';
 import { SubmittableExtrinsic } from '@polkadot/api/types';
-import { AnyNumber, ISubmittableResult } from '@polkadot/types/types';
+import { AnyNumber, ISubmittableResult, RegistryError } from '@polkadot/types/types';
 import { u32, Option } from '@polkadot/types';
 import { PalletCapacityCapacityDetails, PalletCapacityEpochInfo, PalletSchemasSchema } from '@polkadot/types/lookup';
 import { ConfigService } from '../config/config.service';
@@ -160,8 +160,8 @@ export class BlockchainService implements OnApplicationBootstrap, OnApplicationS
   public async crawlBlockListForTx(
     txHash: Hash,
     blockList: bigint[],
-    errorCallback: (moduleError: any) => void,
     capacityCallback: (capacityWithDrawn: bigint) => void,
+    errorCallback: (moduleError: RegistryError) => void,
   ): Promise<BlockHash | undefined> {
     const txReceiptPromises: Promise<BlockHash | undefined>[] = blockList.map(async (blockNumber) => {
       const blockHash = await this.getBlockHash(blockNumber);
