@@ -79,12 +79,11 @@ export class TxStatusMonitoringService extends WorkerHost implements OnApplicati
     // do some stuff
   }
 
-  private async handleMessagesFailure(jobId: string, moduleError: RegistryError): Promise<boolean> {
+  private async handleMessagesFailure(jobId: string, moduleError: RegistryError): Promise<void> {
     this.logger.debug(`Handling extrinsic failure for job ${jobId} and error ${JSON.stringify(moduleError)}`);
     const txJob = (await this.txReceiptQueue.getJob(jobId)) as Job<ITxMonitorJob, any, string>;
     if (!txJob) {
       this.logger.error(`Job ${jobId} not found in tx receipt queue`);
-      return false;
     }
     const blockDelay = 1 * SECONDS_PER_BLOCK * MILLISECONDS_PER_SECOND;
 
@@ -94,45 +93,33 @@ export class TxStatusMonitoringService extends WorkerHost implements OnApplicati
           // Re-try the job in the publish queue with a block delay
           await this.publishQueue.removeRepeatableByKey(txJob.data.referencePublishJob.id);
           await this.publishQueue.add(txJob.data.referencePublishJob.id, txJob.data.referencePublishJob, { delay: blockDelay });
-          return false;
-        case 'ExceedsMaxMessagePayloadSizeBytes':
-          // Fail the job since this should never happen
-          return false;
+          break;
         case 'InvalidMessageSourceAccount':
           // PROVIDER_ID is not set correctly
           // Pause publishing entirely
           this.publishQueue.pause();
-          return false;
+          break;
         case 'InvalidSchemaId':
           // Fail the job since this should never happen, or is a protocol error
           // pause publishing entirely
           this.publishQueue.pause();
-          return false;
+          break;
         case 'UnAuthorizedDelegate':
           // Re-try the job in the publish queue with a block delay, could be a signing error
           await this.publishQueue.removeRepeatableByKey(txJob.data.referencePublishJob.id);
           await this.publishQueue.add(txJob.data.referencePublishJob.id, txJob.data.referencePublishJob, { delay: blockDelay });
-          return false;
-        case 'InvalidPayloadLocation':
-          // Fail the job since this is probably a bug in the code or a bad tx
-          return false;
-        case 'UnsupportedCid':
-          // Fail the job since this needs to be looked at
-          return false;
-        case 'InvalidCid':
-          // Fail the job since this is a total failure
-          return false;
+          break;
+        case 'ExceedsMaxMessagePayloadSizeBytes' || 'InvalidPayloadLocation' || 'UnsupportedCid' || 'InvalidCid':
+          break;
         default:
           this.logger.error(`Unknown module error ${moduleError}`);
-          return false;
       }
     } catch (error) {
       this.logger.error(`Error handling module error: ${error}`);
     }
-    return true;
   }
 
-  private async setEpochCapacity(epoch: string, capacityWithdrew: bigint): Promise<boolean> {
+  private async setEpochCapacity(epoch: string, capacityWithdrew: bigint): Promise<void> {
     const epochCapacityKey = `epochCapacity:${epoch}`;
 
     try {
@@ -145,8 +132,6 @@ export class TxStatusMonitoringService extends WorkerHost implements OnApplicati
       await this.cacheManager.setex(epochCapacityKey, epochDuration, newEpochCapacity.toString());
     } catch (error) {
       this.logger.error(`Error setting epoch capacity: ${error}`);
-      return false;
     }
-    return true;
   }
 }

@@ -161,8 +161,8 @@ export class BlockchainService implements OnApplicationBootstrap, OnApplicationS
     txHash: Hash,
     blockList: bigint[],
     successEvents: [{ pallet: string; event: string }],
-    capacityCallback: (capacityWithDrawn: bigint) => Promise<boolean>,
-    errorCallback: (moduleError: RegistryError) => Promise<boolean>,
+    capacityCallback: (capacityWithDrawn: bigint) => Promise<void>,
+    errorCallback: (moduleError: RegistryError) => Promise<void>,
   ): Promise<{ success: boolean; blockHash?: BlockHash }> {
     const txReceiptPromises: Promise<BlockHash | undefined>[] = blockList.map(async (blockNumber) => {
       const blockHash = await this.getBlockHash(blockNumber);
@@ -189,7 +189,7 @@ export class BlockchainService implements OnApplicationBootstrap, OnApplicationS
             if (eventName.search('capacity') !== -1 && method.search('Withdrawn') !== -1) {
               capacityWithDrawn = BigInt(data[1].toString());
               this.logger.debug(`Capacity withdrawn: ${capacityWithDrawn}`);
-              isTxSuccess = await capacityCallback(capacityWithDrawn);
+              capacityCallback(capacityWithDrawn);
             }
 
             // check custom success events
@@ -202,7 +202,7 @@ export class BlockchainService implements OnApplicationBootstrap, OnApplicationS
               const dispatchError = data[0] as DispatchError;
               const moduleThatErrored = dispatchError.asModule;
               const moduleError = dispatchError.registry.findMetaError(moduleThatErrored);
-              isTxSuccess = await errorCallback(moduleError);
+              errorCallback(moduleError);
             }
           });
         });
