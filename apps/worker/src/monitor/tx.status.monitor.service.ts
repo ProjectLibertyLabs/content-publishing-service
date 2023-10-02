@@ -5,13 +5,13 @@ import { Job, Queue } from 'bullmq';
 import Redis from 'ioredis';
 import { EventEmitter2 } from '@nestjs/event-emitter';
 import { MILLISECONDS_PER_SECOND } from 'time-constants';
+import { RegistryError } from '@polkadot/types/types';
 import { BlockchainService } from '../../../../libs/common/src/blockchain/blockchain.service';
 import { ConfigService } from '../../../../libs/common/src/config/config.service';
 import { ITxMonitorJob } from '../interfaces/status-monitor.interface';
 import { QueueConstants } from '../../../../libs/common/src';
 import { SECONDS_PER_BLOCK } from '../../../../libs/common/src/constants';
 import { BlockchainConstants } from '../../../../libs/common/src/blockchain/blockchain-constants';
-import { RegistryError } from '@polkadot/types/types';
 
 @Injectable()
 @Processor(QueueConstants.TRANSACTION_RECEIPT_QUEUE_NAME, {
