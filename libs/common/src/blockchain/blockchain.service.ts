@@ -174,7 +174,7 @@ export class BlockchainService implements OnApplicationBootstrap, OnApplicationS
         this.logger.verbose(`Found tx ${txHash} in block ${blockNumber}`);
         const at = await this.api.at(blockHash.toHex());
         const events = await at.query.system.events();
-        let isMessageSuccess = false;
+        let isTxSuccess = false;
         let capacityWithDrawn: bigint = 0n;
 
         events.subscribe((records) => {
@@ -192,16 +192,12 @@ export class BlockchainService implements OnApplicationBootstrap, OnApplicationS
             }
 
             if (successEvents.find((successEvent) => successEvent.pallet === eventName && successEvent.event === method)) {
-              isMessageSuccess = true;
+              isTxSuccess = true;
             }
 
             if (eventName.search('system') !== -1 && method.search('ExtrinsicFailed') !== -1) {
-              isMessageSuccess = false;
+              isTxSuccess = false;
               const dispatchError = data[0] as DispatchError;
-              const dispatchInfo = data[1] as DispatchInfo;
-              this.logger.warn(`Extrinsic failed with error: ${dispatchError}`);
-              this.logger.warn(`Extrinsic failed with info: ${dispatchInfo}`);
-
               const moduleThatErrored = dispatchError.asModule;
               const moduleError = dispatchError.registry.findMetaError(moduleThatErrored);
               this.logger.error(`Module error: ${moduleError}`);
@@ -210,8 +206,8 @@ export class BlockchainService implements OnApplicationBootstrap, OnApplicationS
           });
         });
 
-        if (isMessageSuccess) {
-          this.logger.verbose(`Successfully found submitted ipfs message ${txHash} in block ${blockHash}`);
+        if (isTxSuccess) {
+          this.logger.verbose(`Successfully found tx ${txHash} in block ${blockNumber}`);
           return blockHash;
         }
       }

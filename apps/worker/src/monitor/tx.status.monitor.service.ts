@@ -25,8 +25,6 @@ export class TxStatusMonitoringService extends WorkerHost implements OnApplicati
     @InjectQueue(QueueConstants.TRANSACTION_RECEIPT_QUEUE_NAME) private txReceiptQueue,
     @InjectQueue(QueueConstants.PUBLISH_QUEUE_NAME) private publishQueue: Queue,
     private blockchainService: BlockchainService,
-    private configService: ConfigService,
-    private eventEmitter: EventEmitter2,
   ) {
     super();
     this.logger = new Logger(this.constructor.name);
@@ -60,7 +58,7 @@ export class TxStatusMonitoringService extends WorkerHost implements OnApplicati
         blockList,
         [{ pallet: 'messages', event: 'MessageStored' }],
         (capacityWithDrawn: bigint) => this.setEpochCapacity(txCapacityEpoch, capacityWithDrawn),
-        (moduleError: RegistryError) => this.handleExtrinsicFailure(job.id ?? job.data.id, moduleError),
+        (moduleError: RegistryError) => this.handleMessagesFailure(job.id ?? job.data.id, moduleError),
       );
 
       if (txBlockHash) {
@@ -87,8 +85,37 @@ export class TxStatusMonitoringService extends WorkerHost implements OnApplicati
     // do some stuff
   }
 
-  private async handleExtrinsicFailure(jobId: string, moduleError: RegistryError) {
+  private async handleMessagesFailure(jobId: string, moduleError: RegistryError) {
     this.logger.debug(`Handling extrinsic failure for job ${jobId} and module error ${moduleError}`);
+    switch (moduleError.index) {
+      // TooManyMessagesInBlock
+      case 0: {
+        break;
+      }
+      // ExceedsMaxMessagePayloadSizeBytes
+      case 1: {
+        break;
+      }
+      // TypeConversionOverflow
+      // this error is returned from RPC
+      // no action needed here
+      case 2: {
+        // eslint-disable-next-line no-case-declarations
+        break;
+      }
+      // InvalidMessageSourceAccount
+      case 3: {
+        break;
+      }
+      // InvalidSchemaId
+      case 4: {
+        break;
+      }
+      default: {
+        this.logger.error(`Unknown module error ${moduleError}`);
+        break;
+      }
+    }
   }
 
   private async setEpochCapacity(epoch: string, capacityWithdrew: bigint) {
