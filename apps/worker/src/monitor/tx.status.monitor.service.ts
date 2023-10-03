@@ -3,11 +3,9 @@ import { Processor, WorkerHost, OnWorkerEvent, InjectQueue } from '@nestjs/bullm
 import { Injectable, Logger, OnApplicationBootstrap, OnModuleDestroy } from '@nestjs/common';
 import { Job, Queue } from 'bullmq';
 import Redis from 'ioredis';
-import { EventEmitter2 } from '@nestjs/event-emitter';
 import { MILLISECONDS_PER_SECOND } from 'time-constants';
 import { RegistryError } from '@polkadot/types/types';
 import { BlockchainService } from '../../../../libs/common/src/blockchain/blockchain.service';
-import { ConfigService } from '../../../../libs/common/src/config/config.service';
 import { ITxMonitorJob } from '../interfaces/status-monitor.interface';
 import { QueueConstants } from '../../../../libs/common/src';
 import { SECONDS_PER_BLOCK } from '../../../../libs/common/src/constants';
@@ -50,20 +48,36 @@ export class TxStatusMonitoringService extends WorkerHost implements OnApplicati
       const previousKnownBlockNumber = (await this.blockchainService.getBlock(job.data.lastFinalizedBlockHash)).block.header.number.toBigInt();
       const currentFinalizedBlockNumber = await this.blockchainService.getLatestFinalizedBlockNumber();
       const blockList: bigint[] = [];
+      const blockDelay = 1 * SECONDS_PER_BLOCK * MILLISECONDS_PER_SECOND;
+
       for (let i = previousKnownBlockNumber; i <= currentFinalizedBlockNumber && i < previousKnownBlockNumber + numberBlocksToParse; i += 1n) {
         blockList.push(i);
       }
       const txResult = await this.blockchainService.crawlBlockListForTx(job.data.txHash, blockList, [{ pallet: 'messages', event: 'MessageStored' }]);
+      // if tx has not yet included in a block, throw error to retry
       if (!txResult.blockHash && !txResult.error && job.attemptsMade <= (job.opts.attempts ?? 3)) {
         throw new Error(`Tx not found in block list, retrying (attempts=${job.attemptsMade})`);
       }
 
-      // take actions on error and fail the job
+      this.setEpochCapacity(txCapacityEpoch, BigInt(txResult.capacityWithDrawn ?? 0n));
+
       if (txResult.error) {
-        await this.handleMessagesFailure(job.data.id, txResult.error);
+        this.logger.debug(`Error found in tx result: ${JSON.stringify(txResult.error)}`);
+        const errorReport = await this.handleMessagesFailure(job.data.id, txResult.error);
+        const failedError = new Error(`Job ${job.data.id} failed with error ${JSON.stringify(txResult.error)}`);
+
+        if (errorReport.pause) {
+          await this.publishQueue.pause();
+        }
+
+        if (errorReport.retry && job.attemptsMade <= (job.opts.attempts ?? 3)) {
+          this.logger.debug(`Retrying job ${job.data.id}`);
+          await this.publishQueue.removeRepeatableByKey(job.data.referencePublishJob.id);
+          await this.publishQueue.add(job.data.referencePublishJob.id, job.data.referencePublishJob, { delay: blockDelay });
+        }
       }
-      this.setEpochCapacity(txCapacityEpoch, txResult.capacityWithDrawn ?? 0n);
-      return { success: txResult.success };
+      await this.txReceiptQueue.removeRepeatableByKey(job.data.id);
+      throw new Error(`Job ${job.data.id} failed with error ${JSON.stringify(txResult.error)}`);
     } catch (e) {
       this.logger.error(e);
       throw e;
@@ -78,56 +92,43 @@ export class TxStatusMonitoringService extends WorkerHost implements OnApplicati
     // do some stuff
   }
 
-  private async handleMessagesFailure(jobId: string, moduleError: RegistryError): Promise<void> {
+  private async handleMessagesFailure(jobId: string, moduleError: RegistryError): Promise<{ pause: boolean; retry: boolean }> {
     this.logger.debug(`Handling extrinsic failure for job ${jobId} and error ${JSON.stringify(moduleError)}`);
-    const txJob = (await this.txReceiptQueue.getJob(jobId)) as Job<ITxMonitorJob, any, string>;
-    if (!txJob) {
-      this.logger.error(`Job ${jobId} not found in tx receipt queue`);
-    }
-    const blockDelay = 1 * SECONDS_PER_BLOCK * MILLISECONDS_PER_SECOND;
-
     try {
       switch (moduleError.name) {
-        case 'TooManyMessagesInBlock':
-          // Re-try the job in the publish queue with a block delay
-          await this.publishQueue.removeRepeatableByKey(txJob.data.referencePublishJob.id);
-          await this.publishQueue.add(txJob.data.referencePublishJob.id, txJob.data.referencePublishJob, { delay: blockDelay });
-          break;
-        case 'InvalidMessageSourceAccount':
-          // PROVIDER_ID is not set correctly
-          // Pause publishing entirely
-          this.publishQueue.pause();
-          break;
-        case 'InvalidSchemaId':
-          // Fail the job since this should never happen, or is a protocol error
-          // pause publishing entirely
-          this.publishQueue.pause();
-          break;
+        case 'Too many messages are added to existing block':
+          // Re-try the job in the publish queue
+          return { pause: false, retry: true };
         case 'UnAuthorizedDelegate':
-          // Re-try the job in the publish queue with a block delay, could be a signing error
-          await this.publishQueue.removeRepeatableByKey(txJob.data.referencePublishJob.id);
-          await this.publishQueue.add(txJob.data.referencePublishJob.id, txJob.data.referencePublishJob, { delay: blockDelay });
-          break;
-        case 'ExceedsMaxMessagePayloadSizeBytes' || 'InvalidPayloadLocation' || 'UnsupportedCid' || 'InvalidCid':
-          break;
+          // Re-try the job in the publish, could be a signing error
+          return { pause: false, retry: true };
+        case 'InvalidMessageSourceAccount':
+          return { pause: true, retry: false };
+        case 'Invalid SchemaId or Schema not found':
+          return { pause: true, retry: false };
+        case 'Message payload size is too large' || 'Invalid payload location' || 'Unsupported CID version' || 'Invalid CID':
+          return { pause: false, retry: false };
         default:
           this.logger.error(`Unknown module error ${moduleError}`);
       }
     } catch (error) {
       this.logger.error(`Error handling module error: ${error}`);
     }
+
+    // unknown error, pause the queue
+    return { pause: true, retry: false };
   }
 
   private async setEpochCapacity(epoch: string, capacityWithdrew: bigint): Promise<void> {
     const epochCapacityKey = `epochCapacity:${epoch}`;
 
     try {
-      const epochCapacity = BigInt((await this.cacheManager.get(epochCapacityKey)) ?? 0);
+      const savedCapacity = await this.cacheManager.get(epochCapacityKey);
+      const epochCapacity = BigInt(savedCapacity ?? 0);
       const newEpochCapacity = epochCapacity + capacityWithdrew;
 
       const epochDurationBlocks = await this.blockchainService.getCurrentEpochLength();
       const epochDuration = epochDurationBlocks * SECONDS_PER_BLOCK * MILLISECONDS_PER_SECOND;
-
       await this.cacheManager.setex(epochCapacityKey, epochDuration, newEpochCapacity.toString());
     } catch (error) {
       this.logger.error(`Error setting epoch capacity: ${error}`);
