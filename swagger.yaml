@@ -1,49 +1,165 @@
 openapi: 3.0.0
 paths:
-  /api/dev/request/{jobId}:
+  "/api/health":
     get:
-      operationId: DevelopmentController_requestJob
-      parameters:
-        - name: jobId
-          required: true
-          in: path
-          schema:
-            type: string
+      operationId: ApiController_health
+      parameters: []
       responses:
         '200':
           description: ''
-  /api/dev/asset/{assetId}:
-    get:
-      operationId: DevelopmentController_getAsset
-      parameters:
-        - name: assetId
-          required: true
-          in: path
-          schema:
-            type: string
+  "/api/asset/upload":
+    put:
+      operationId: ApiController_assetUpload
+      parameters: []
+      requestBody:
+        required: true
+        description: Asset files
+        content:
+          multipart/form-data:
+            schema:
+              "$ref": "#/components/schemas/FilesUploadDto"
       responses:
-        '200':
+        '202':
           description: ''
           content:
             application/json:
               schema:
-                type: object
-  /api/dev/dummy/announcement/{queueType}/{count}:
+                "$ref": "#/components/schemas/UploadResponseDto"
+  "/api/content/{userDsnpId}/broadcast":
     post:
-      operationId: DevelopmentController_populate
+      operationId: ApiController_broadcast
       parameters:
-        - name: count
-          required: true
-          in: path
-          schema:
-            type: number
+      - name: userDsnpId
+        required: true
+        in: path
+        schema:
+          type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              "$ref": "#/components/schemas/BroadcastDto"
       responses:
-        '201':
+        '202':
           description: ''
+          content:
+            application/json:
+              schema:
+                "$ref": "#/components/schemas/AnnouncementResponseDto"
+  "/api/content/{userDsnpId}/reply":
+    post:
+      operationId: ApiController_reply
+      parameters:
+      - name: userDsnpId
+        required: true
+        in: path
+        schema:
+          type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              "$ref": "#/components/schemas/ReplyDto"
+      responses:
+        '202':
+          description: ''
+          content:
+            application/json:
+              schema:
+                "$ref": "#/components/schemas/AnnouncementResponseDto"
+  "/api/content/{userDsnpId}/reaction":
+    post:
+      operationId: ApiController_reaction
+      parameters:
+      - name: userDsnpId
+        required: true
+        in: path
+        schema:
+          type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              "$ref": "#/components/schemas/ReactionDto"
+      responses:
+        '202':
+          description: ''
+          content:
+            application/json:
+              schema:
+                "$ref": "#/components/schemas/AnnouncementResponseDto"
+  "/api/content/{userDsnpId}":
+    put:
+      operationId: ApiController_update
+      parameters:
+      - name: userDsnpId
+        required: true
+        in: path
+        schema:
+          type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              "$ref": "#/components/schemas/UpdateDto"
+      responses:
+        '202':
+          description: ''
+          content:
+            application/json:
+              schema:
+                "$ref": "#/components/schemas/AnnouncementResponseDto"
+    delete:
+      operationId: ApiController_delete
+      parameters:
+      - name: userDsnpId
+        required: true
+        in: path
+        schema:
+          type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              "$ref": "#/components/schemas/TombstoneDto"
+      responses:
+        '202':
+          description: ''
+          content:
+            application/json:
+              schema:
+                "$ref": "#/components/schemas/AnnouncementResponseDto"
+  "/api/profile/{userDsnpId}":
+    put:
+      operationId: ApiController_profile
+      parameters:
+      - name: userDsnpId
+        required: true
+        in: path
+        schema:
+          type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              "$ref": "#/components/schemas/ProfileDto"
+      responses:
+        '202':
+          description: ''
+          content:
+            application/json:
+              schema:
+                "$ref": "#/components/schemas/AnnouncementResponseDto"
 info:
   title: Content Publishing Service API
   description: Content Publishing Service API
-  version: 1.0
+  version: '1.0'
   contact: {}
 tags: []
 servers: []
@@ -68,7 +184,7 @@ components:
             type: string
             format: binary
       required:
-        - files
+      - files
     UploadResponseDto:
       type: object
       properties:
@@ -77,7 +193,7 @@ components:
           items:
             type: string
       required:
-        - assetIds
+      - assetIds
     AssetReferenceDto:
       type: object
       properties:
@@ -94,21 +210,21 @@ components:
           type: string
           pattern: DURATION_REGEX
       required:
-        - referenceId
+      - referenceId
     AssetDto:
       type: object
       properties:
         type:
           type: string
           enum:
-            - link
-            - image
-            - audio
-            - video
+          - link
+          - image
+          - audio
+          - video
         references:
           type: array
           items:
-            $ref: '#/components/schemas/AssetReferenceDto'
+            "$ref": "#/components/schemas/AssetReferenceDto"
         name:
           type: string
           minLength: 1
@@ -116,15 +232,15 @@ components:
           type: string
           minLength: 1
       required:
-        - type
+      - type
     TagDto:
       type: object
       properties:
         type:
           type: string
           enum:
-            - mention
-            - hashtag
+          - mention
+          - hashtag
         name:
           type: string
           minLength: 1
@@ -133,7 +249,7 @@ components:
           minLength: 1
           pattern: DSNP_USER_URI_REGEX
       required:
-        - type
+      - type
     LocationDto:
       type: object
       properties:
@@ -156,14 +272,14 @@ components:
         units:
           type: string
           enum:
-            - cm
-            - m
-            - km
-            - inches
-            - feet
-            - miles
+          - cm
+          - m
+          - km
+          - inches
+          - feet
+          - miles
       required:
-        - name
+      - name
     NoteActivityDto:
       type: object
       properties:
@@ -176,32 +292,32 @@ components:
         assets:
           type: array
           items:
-            $ref: '#/components/schemas/AssetDto'
+            "$ref": "#/components/schemas/AssetDto"
         name:
           type: string
         tag:
           type: array
           items:
-            $ref: '#/components/schemas/TagDto'
+            "$ref": "#/components/schemas/TagDto"
         location:
-          $ref: '#/components/schemas/LocationDto'
+          "$ref": "#/components/schemas/LocationDto"
       required:
-        - content
-        - published
+      - content
+      - published
     BroadcastDto:
       type: object
       properties:
         content:
-          $ref: '#/components/schemas/NoteActivityDto'
+          "$ref": "#/components/schemas/NoteActivityDto"
       required:
-        - content
+      - content
     AnnouncementResponseDto:
       type: object
       properties:
         referenceId:
           type: string
       required:
-        - referenceId
+      - referenceId
     ReplyDto:
       type: object
       properties:
@@ -209,10 +325,10 @@ components:
           type: string
           pattern: DSNP_CONTENT_URI_REGEX
         content:
-          $ref: '#/components/schemas/NoteActivityDto'
+          "$ref": "#/components/schemas/NoteActivityDto"
       required:
-        - inReplyTo
-        - content
+      - inReplyTo
+      - content
     ReactionDto:
       type: object
       properties:
@@ -228,9 +344,9 @@ components:
           type: string
           pattern: DSNP_CONTENT_URI_REGEX
       required:
-        - emoji
-        - apply
-        - inReplyTo
+      - emoji
+      - apply
+      - inReplyTo
     UpdateDto:
       type: object
       properties:
@@ -240,14 +356,14 @@ components:
         targetAnnouncementType:
           type: string
           enum:
-            - broadcast
-            - reply
+          - broadcast
+          - reply
         content:
-          $ref: '#/components/schemas/NoteActivityDto'
+          "$ref": "#/components/schemas/NoteActivityDto"
       required:
-        - targetContentHash
-        - targetAnnouncementType
-        - content
+      - targetContentHash
+      - targetAnnouncementType
+      - content
     TombstoneDto:
       type: object
       properties:
@@ -257,18 +373,18 @@ components:
         targetAnnouncementType:
           type: string
           enum:
-            - broadcast
-            - reply
+          - broadcast
+          - reply
       required:
-        - targetContentHash
-        - targetAnnouncementType
+      - targetContentHash
+      - targetAnnouncementType
     ProfileActivityDto:
       type: object
       properties:
         icon:
           type: array
           items:
-            $ref: '#/components/schemas/AssetReferenceDto'
+            "$ref": "#/components/schemas/AssetReferenceDto"
         summary:
           type: string
         published:
@@ -279,13 +395,13 @@ components:
         tag:
           type: array
           items:
-            $ref: '#/components/schemas/TagDto'
+            "$ref": "#/components/schemas/TagDto"
         location:
-          $ref: '#/components/schemas/LocationDto'
+          "$ref": "#/components/schemas/LocationDto"
     ProfileDto:
       type: object
       properties:
         profile:
-          $ref: '#/components/schemas/ProfileActivityDto'
+          "$ref": "#/components/schemas/ProfileActivityDto"
       required:
-        - profile
+      - profile
