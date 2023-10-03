@@ -54,7 +54,7 @@ export class TxStatusMonitoringService extends WorkerHost implements OnApplicati
         blockList.push(i);
       }
       const txResult = await this.blockchainService.crawlBlockListForTx(job.data.txHash, blockList, [{ pallet: 'messages', event: 'MessageStored' }]);
-      // if tx has not yet included in a block, throw error to retry
+      // if tx has not yet included in a block, throw error to retry till max attempts
       if (!txResult.blockHash && !txResult.error && job.attemptsMade <= (job.opts.attempts ?? 3)) {
         throw new Error(`Tx not found in block list, retrying (attempts=${job.attemptsMade})`);
       }
@@ -93,23 +93,24 @@ export class TxStatusMonitoringService extends WorkerHost implements OnApplicati
   }
 
   private async handleMessagesFailure(jobId: string, moduleError: RegistryError): Promise<{ pause: boolean; retry: boolean }> {
-    this.logger.debug(`Handling extrinsic failure for job ${jobId} and error ${JSON.stringify(moduleError)}`);
     try {
-      switch (moduleError.name) {
-        case 'Too many messages are added to existing block':
+      switch (moduleError.method) {
+        case 'TooManyMessagesInBlock':
           // Re-try the job in the publish queue
           return { pause: false, retry: true };
         case 'UnAuthorizedDelegate':
           // Re-try the job in the publish, could be a signing error
           return { pause: false, retry: true };
         case 'InvalidMessageSourceAccount':
+        case 'InvalidSchemaId':
+        case 'ExceedsMaxMessagePayloadSizeBytes':
+        case 'InvalidPayloadLocation':
+        case 'UnsupportedCid':
+        case 'InvalidCid':
           return { pause: true, retry: false };
-        case 'Invalid SchemaId or Schema not found':
-          return { pause: true, retry: false };
-        case 'Message payload size is too large' || 'Invalid payload location' || 'Unsupported CID version' || 'Invalid CID':
-          return { pause: false, retry: false };
         default:
           this.logger.error(`Unknown module error ${moduleError}`);
+          break;
       }
     } catch (error) {
       this.logger.error(`Error handling module error: ${error}`);
