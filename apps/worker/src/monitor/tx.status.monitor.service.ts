@@ -98,7 +98,7 @@ export class TxStatusMonitoringService extends BaseConsumer {
     }
 
     // unknown error, pause the queue
-    return { pause: true, retry: false };
+    return { pause: false, retry: false };
   }
 
   private async setEpochCapacity(epoch: string, capacityWithdrew: bigint): Promise<void> {
