@@ -40,14 +40,15 @@ export class TxStatusMonitoringService extends BaseConsumer {
         blockList.push(i);
       }
       const txResult = await this.blockchainService.crawlBlockListForTx(job.data.txHash, blockList, [{ pallet: 'messages', event: 'MessageStored' }]);
+
       // if tx has not yet included in a block, throw error to retry till max attempts
-      if (!txResult.blockHash && !txResult.error && job.attemptsMade <= (job.opts.attempts ?? 3)) {
+      if (!txResult.blockHash && !txResult.error) {
         throw new Error(`Tx not found in block list, retrying (attempts=${job.attemptsMade})`);
       }
 
       this.setEpochCapacity(txCapacityEpoch, BigInt(txResult.capacityWithDrawn ?? 0n));
 
-      if (txResult.error) {
+      if (txResult.error && job.attemptsMade <= (job.opts.attempts ?? 3)) {
         this.logger.debug(`Error found in tx result: ${JSON.stringify(txResult.error)}`);
         const errorReport = await this.handleMessagesFailure(job.data.id, txResult.error);
         const failedError = new Error(`Job ${job.data.id} failed with error ${JSON.stringify(txResult.error)}`);
@@ -56,7 +57,7 @@ export class TxStatusMonitoringService extends BaseConsumer {
           await this.publishQueue.pause();
         }
 
-        if (errorReport.retry && job.attemptsMade <= (job.opts.attempts ?? 3)) {
+        if (errorReport.retry) {
           this.logger.debug(`Retrying job ${job.data.id}`);
           await this.publishQueue.removeRepeatableByKey(job.data.referencePublishJob.id);
           await this.publishQueue.add(job.data.referencePublishJob.id, job.data.referencePublishJob, { delay: blockDelay });
@@ -70,12 +71,6 @@ export class TxStatusMonitoringService extends BaseConsumer {
     } finally {
       // do some stuff
     }
-  }
-
-  // eslint-disable-next-line class-methods-use-this
-  @OnWorkerEvent('completed')
-  onCompleted() {
-    // do some stuff
   }
 
   private async handleMessagesFailure(jobId: string, moduleError: RegistryError): Promise<{ pause: boolean; retry: boolean }> {
