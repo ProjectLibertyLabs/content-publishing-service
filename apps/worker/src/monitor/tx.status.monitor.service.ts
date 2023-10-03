@@ -88,7 +88,7 @@ export class TxStatusMonitoringService extends BaseConsumer {
         case 'InvalidPayloadLocation':
         case 'UnsupportedCid':
         case 'InvalidCid':
-          return { pause: true, retry: false };
+          return { pause: false, retry: false };
         default:
           this.logger.error(`Unknown module error ${moduleError}`);
           break;
