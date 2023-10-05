@@ -1,21 +1,10 @@
 version: '3'
 
 services:
-  redis:
-    image: redis:latest
-    ports:
-      - 6379:6379
-    networks:
-      - cp-network-dev 
-    volumes:
-      - redis_data:/data
   frequency:
     image: frequencychain/instant-seal-node:latest
     ports:
       - 9944:9944
-    networks:
-      - cp-network-dev
-    container_name: frequency-node
   
   kubo_ipfs:
     image: ipfs/kubo:latest
@@ -23,31 +12,23 @@ services:
       - 4001:4001
       - 5001:5001
       - 8080:8080
-    networks:
-      - cp-network-dev
-    container_name: kubo-ipfs
 
   content-publishing-service:
     depends_on:
-      - redis
       - frequency
       - kubo_ipfs
     build:
       context: .
       dockerfile: dev.Dockerfile
     ports:
-      - 3000:3000
+      - 3000:3000 # web server
+      - 6379:6379 # redis inbuilt in docker
     env_file:
-      - .docker.dev.env
+      - .env.docker.dev
     volumes:
     - ./:/app
-    networks:
-      - cp-network-dev
-
 volumes:
   redis_data:
 
-networks:
-  cp-network-dev:
 
 

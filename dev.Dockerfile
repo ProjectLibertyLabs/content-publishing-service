@@ -1,11 +1,23 @@
-FROM node:18-alpine3.17
+FROM --platform=linux/amd64 node:18
 
-WORKDIR /app
+RUN apt-get -y update
+RUN apt-get -y install redis
+RUN sed -e 's/^appendonly .*$/appendonly yes/' /etc/redis/redis.conf > /etc/redis/redis.conf.appendonly
+RUN mv /etc/redis/redis.conf.appendonly /etc/redis/redis.conf
 
-# Install the application dependencies
-COPY package*.json ./
+ENV REDIS_URL=redis://localhost:6379
+
+WORKDIR /usr/src/app
+
+COPY . .
+
 RUN npm install
 
+# install nest cli
+RUN npm install -g @nestjs/cli
+
+VOLUME [ "/var/lib/redis" ]
 EXPOSE 3000
+EXPOSE 6379
 # Start the application
-CMD ["npm", "run", "start:dev:docker"]
+ENTRYPOINT service redis-server start && npm run start:dev:docker
