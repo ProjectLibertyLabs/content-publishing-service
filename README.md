@@ -28,11 +28,7 @@ Follow these steps to set up and run Content Publisher:
    git clone https://github.com/amplicalabls/content-publishing-service.git
    ```
 
-2. Copy the .env.template to .env.docker.dev and update the values as needed.
-
-   ```bash
-    cp .env.template .env.docker.dev
-   ```
+2. Modify any environment variables in the `.env` file as needed. For docker compose env `.docker.env.dev` file is used.
 
 3. Run the following command to start the service:
 
