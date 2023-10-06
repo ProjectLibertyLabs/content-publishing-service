@@ -163,7 +163,7 @@ import { ConfigService } from '../../../libs/common/src/config/config.service';
     ScheduleModule.forRoot(),
   ],
   providers: [ConfigService, ApiService, IpfsService],
-  controllers: process.env?.ENVIRONMENT === 'dev' ? [DevelopmentController, ApiController] : [ApiController],
+  controllers: process.env?.ENVIRONMENT === 'development' ? [DevelopmentController, ApiController] : [ApiController],
   exports: [],
 })
 export class ApiModule {}
