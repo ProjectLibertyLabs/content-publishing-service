@@ -8,7 +8,6 @@
     "build:swagger": "npx ts-node apps/api/src/generate-metadata.ts",
     "generate-swagger-ui": "redoc-cli bundle swagger.yaml --output=./docs/index.html",
     "format": "prettier --write \"apps/**/*.ts\" \"libs/**/*.ts\"",
-    "start": "env TS_NODE_BASEURL=./dist/apps node dist/apps/api/main.js & env TS_NODE_BASEURL=./dist/apps node dist/apps/worker/main.js",
     "start:api": "nest start api",
     "start:worker": "nest start worker",
     "start:api:dev": "set -a ; . .env ; nest start api",

@@ -28,12 +28,12 @@ Follow these steps to set up and run Content Publisher:
    git clone https://github.com/amplicalabls/content-publishing-service.git
    ```
 
-2. Modify any environment variables in the `.env` file as needed. For docker compose env `.docker.env.dev` file is used.
+2. Modify any environment variables in the `.env` file as needed. For docker compose env `.env.docker.dev` file is used.
 
 3. Run the following command to start the service:
 
    ```bash
-    docker-compose -f docker-compose.dev.yml up
+    docker-compose -f docker-compose.dev.yaml up
     ```
 
 4. Visit [Swagger UI](http://localhost:3000/api/docs/swagger) to view the API documentation and submit requests to the service.
