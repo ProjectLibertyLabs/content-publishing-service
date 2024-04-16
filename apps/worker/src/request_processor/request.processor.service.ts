@@ -8,6 +8,7 @@ import { IRequestJob, QueueConstants } from '../../../../libs/common/src';
 import { IpfsService } from '../../../../libs/common/src/utils/ipfs.client';
 import { DsnpAnnouncementProcessor } from './dsnp.announcement.processor';
 import { BaseConsumer } from '../BaseConsumer';
+import { MILLISECONDS_PER_SECOND } from 'time-constants';
 
 @Injectable()
 @Processor(QueueConstants.REQUEST_QUEUE_NAME)
@@ -46,7 +47,7 @@ export class RequestProcessorService extends BaseConsumer {
     data.dependencyAttempt += 1;
     if (data.dependencyAttempt <= 3) {
       // exponential backoff
-      const delayedTime = 2 ** data.dependencyAttempt * this.configService.getAssetUploadVerificationDelaySeconds() * 1000;
+      const delayedTime = 2 ** data.dependencyAttempt * this.configService.assetUploadVerificationDelaySeconds * MILLISECONDS_PER_SECOND;
       await job.moveToDelayed(Date.now() + delayedTime, job.token);
       await job.update(data);
       throw new DelayedError();
