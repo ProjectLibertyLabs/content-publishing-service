@@ -18,6 +18,7 @@ export interface ConfigEnvironmentVariables {
   PROVIDER_ID: string;
   PROVIDER_ACCOUNT_SEED_PHRASE: string;
   CAPACITY_LIMIT: ICapacityLimit;
+  FILE_UPLOAD_MAX_SIZE_IN_BYTES: number;
   API_PORT: number;
   ASSET_EXPIRATION_INTERVAL_SECONDS: number;
   BATCH_INTERVAL_SECONDS: number;
@@ -76,6 +77,10 @@ export class ConfigService {
       return `https://ipfs.io/ipfs/${cid}`;
     }
     return gatewayUrl.replace('[CID]', cid);
+  }
+
+  public get fileUploadMaxSizeInBytes(): number {
+    return this.nestConfigService.get<number>('FILE_UPLOAD_MAX_SIZE_IN_BYTES')!;
   }
 
   public get apiPort(): number {

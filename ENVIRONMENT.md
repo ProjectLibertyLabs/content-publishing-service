@@ -15,6 +15,7 @@ This application recognizes the following environment variables:
 |`BATCH_INTERVAL_SECONDS`|Number of seconds between content publishing batches. This is so that the service waits a reasonable amount of time for additional content to publishing before submitting a batch--it represents a trade-off between maximum batch fullness and minimal wait time for published content|> 0|Y||
 |`BATCH_MAX_COUNT`|Maximum number of items that can be submitted in a single batch|> 0|Y||
 |`CHAIN_ENVIRONMENT`|Environment for mapping announcement type to schema ID (use 'dev' for e2e tests)|dev\|rococo\|testnet\|mainnet|Y||
+|`FILE_UPLOAD_MAX_SIZE_IN_BYTES`|Max file size (in bytes) allowed for asset upload|> 0|Y||
 |`IPFS_BASIC_AUTH_SECRET`|If using Infura, put auth token here, or leave blank for Kubo RPC|string|N|blank|
 |`IPFS_BASIC_AUTH_USER`|If using Infura, put Project ID here, or leave blank for Kubo RPC|string|N|blank|
 |`IPFS_ENDPOINT`|URL to IPFS endpoint|URL|Y||

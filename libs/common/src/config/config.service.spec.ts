@@ -49,6 +49,7 @@ describe('ContentPublishingConfigService', () => {
     HEALTH_CHECK_MAX_RETRY_INTERVAL_SECONDS: undefined,
     HEALTH_CHECK_MAX_RETRIES: undefined,
     CAPACITY_LIMIT: undefined,
+    FILE_UPLOAD_MAX_SIZE_IN_BYTES: undefined,
     API_PORT: undefined,
     ASSET_EXPIRATION_INTERVAL_SECONDS: undefined,
     BATCH_INTERVAL_SECONDS: undefined,
@@ -117,6 +118,11 @@ describe('ContentPublishingConfigService', () => {
       await expect(setupConfigService({ CAPACITY_LIMIT: '{ "type": "amount", "value": -1 }', ...env })).rejects.toBeDefined();
     });
 
+    it('invalid max file size should fail', async () => {
+      const { FILE_UPLOAD_MAX_SIZE_IN_BYTES: dummy, ...env } = ALL_ENV;
+      await expect(setupConfigService({ FILE_UPLOAD_MAX_SIZE_IN_BYTES: -1, ...env })).rejects.toBeDefined();
+    });
+
     it('invalid api port should fail', async () => {
       const { API_PORT: dummy, ...env } = ALL_ENV;
       await expect(setupConfigService({ API_PORT: -1, ...env })).rejects.toBeDefined();
@@ -171,6 +177,10 @@ describe('ContentPublishingConfigService', () => {
 
     it('should get capacity limit', () => {
       expect(contentPublishingConfigService.capacityLimit).toStrictEqual(JSON.parse(ALL_ENV.CAPACITY_LIMIT!));
+    });
+
+    it('should get file upload max size in bytes', () => {
+      expect(contentPublishingConfigService.fileUploadMaxSizeInBytes).toStrictEqual(parseInt(ALL_ENV.FILE_UPLOAD_MAX_SIZE_IN_BYTES as string, 10));
     });
 
     it('should get api port', () => {

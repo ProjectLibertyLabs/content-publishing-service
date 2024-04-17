@@ -6,6 +6,7 @@ import { InjectQueue } from '@nestjs/bullmq';
 import { SchedulerRegistry } from '@nestjs/schedule';
 import { randomUUID } from 'crypto';
 import * as fs from 'fs';
+import { MILLISECONDS_PER_SECOND } from 'time-constants';
 import { ConfigService } from '../../../../libs/common/src/config/config.service';
 import { Announcement } from '../../../../libs/common/src/interfaces/dsnp';
 import { RedisUtils } from '../../../../libs/common/src/utils/redis';
@@ -16,7 +17,6 @@ import { IBatchAnnouncerJobData } from '../interfaces/batch-announcer.job.interf
 import { DsnpSchemas } from '../../../../libs/common/src/utils/dsnp.schema';
 import { QueueConstants } from '../../../../libs/common/src';
 import getBatchLockKey = RedisUtils.getLockKey;
-import { MILLISECONDS_PER_SECOND } from 'time-constants';
 
 @Injectable()
 export class BatchingProcessorService {

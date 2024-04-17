@@ -3,12 +3,12 @@ import { Processor } from '@nestjs/bullmq';
 import { Injectable } from '@nestjs/common';
 import { DelayedError, Job } from 'bullmq';
 import Redis from 'ioredis';
+import { MILLISECONDS_PER_SECOND } from 'time-constants';
 import { ConfigService } from '../../../../libs/common/src/config/config.service';
 import { IRequestJob, QueueConstants } from '../../../../libs/common/src';
 import { IpfsService } from '../../../../libs/common/src/utils/ipfs.client';
 import { DsnpAnnouncementProcessor } from './dsnp.announcement.processor';
 import { BaseConsumer } from '../BaseConsumer';
-import { MILLISECONDS_PER_SECOND } from 'time-constants';
 
 @Injectable()
 @Processor(QueueConstants.REQUEST_QUEUE_NAME)

@@ -85,7 +85,7 @@ export class PublishingService extends BaseConsumer implements OnApplicationBoot
   }
 
   private async checkCapacity(): Promise<void> {
-    const capacityLimit = this.configService.capacityLimit;
+    const { capacityLimit } = this.configService;
     const capacity = await this.blockchainService.capacityInfo(this.configService.providerId);
     const { remainingCapacity } = capacity;
     const { currentEpoch } = capacity;

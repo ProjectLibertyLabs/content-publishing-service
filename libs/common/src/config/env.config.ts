@@ -26,6 +26,7 @@ export const configModuleOptions: ConfigModuleOptions = {
       return value;
     }),
     PROVIDER_ACCOUNT_SEED_PHRASE: Joi.string().required(),
+    FILE_UPLOAD_MAX_SIZE_IN_BYTES: Joi.number().min(1).required(),
     API_PORT: Joi.number().min(0).default(3000),
     ASSET_EXPIRATION_INTERVAL_SECONDS: Joi.number().min(1).required(),
     BATCH_INTERVAL_SECONDS: Joi.number().min(1).required(),
