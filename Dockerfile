@@ -21,10 +21,10 @@ COPY --from=builder /usr/src/app/dist ./dist
 COPY package*.json ./
 COPY ./lua ./lua
 
-RUN npm install --only=production
+RUN npm ci --omit=dev
 
 EXPOSE 3000
 
 ENV START_PROCESS="api"
 
-ENTRYPOINT ["npm", "run", "start:${START_PROCESS}:prod"]
+ENTRYPOINT npm run start:${START_PROCESS}:prod
