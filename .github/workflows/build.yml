@@ -1,4 +1,4 @@
-name: Build And Test ContentPublishing Service
+name: Build And Test Content Publishing Service
 concurrency:
   group: ${{github.workflow}}-${{github.ref}}
   cancel-in-progress: true
@@ -11,7 +11,8 @@ on:
       - main
 
 jobs:
-  build_Nest_js:
+  build:
+    name: 'Build'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -43,6 +44,7 @@ jobs:
       - name: Run Jest
         run: npm run test
   check_licenses:
+    name: 'Dependency License Check'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
