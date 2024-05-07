@@ -7,7 +7,7 @@ import { Controller, Get, Logger, NotFoundException, Param, Post } from '@nestjs
 import { InjectQueue } from '@nestjs/bullmq';
 import { Queue } from 'bullmq';
 import { Job } from 'bullmq/dist/esm/classes/job';
-import { AnnouncementTypeDto, QueueConstants } from '../../../libs/common/src';
+import { AnnouncementTypeDto, BROADCAST_QUEUE_NAME, PROFILE_QUEUE_NAME, REACTION_QUEUE_NAME, REPLY_QUEUE_NAME, REQUEST_QUEUE_NAME, TOMBSTONE_QUEUE_NAME, UPDATE_QUEUE_NAME } from '../../../libs/common/src';
 import { IpfsService } from '../../../libs/common/src/utils/ipfs.client';
 import { AnnouncementType, createBroadcast, createProfile, createReaction, createReply, createTombstone, createUpdate } from '../../../libs/common/src/interfaces/dsnp';
 import { calculateDsnpHash } from '../../../libs/common/src/utils/ipfs';
@@ -19,13 +19,13 @@ export class DevelopmentController {
   private readonly queueMapper: Map<AnnouncementTypeDto, Queue>;
 
   constructor(
-    @InjectQueue(QueueConstants.REQUEST_QUEUE_NAME) private requestQueue: Queue,
-    @InjectQueue(QueueConstants.BROADCAST_QUEUE_NAME) private broadcastQueue: Queue,
-    @InjectQueue(QueueConstants.REPLY_QUEUE_NAME) private replyQueue: Queue,
-    @InjectQueue(QueueConstants.REACTION_QUEUE_NAME) private reactionQueue: Queue,
-    @InjectQueue(QueueConstants.UPDATE_QUEUE_NAME) private updateQueue: Queue,
-    @InjectQueue(QueueConstants.PROFILE_QUEUE_NAME) private profileQueue: Queue,
-    @InjectQueue(QueueConstants.TOMBSTONE_QUEUE_NAME) private tombstoneQueue: Queue,
+    @InjectQueue(REQUEST_QUEUE_NAME) private requestQueue: Queue,
+    @InjectQueue(BROADCAST_QUEUE_NAME) private broadcastQueue: Queue,
+    @InjectQueue(REPLY_QUEUE_NAME) private replyQueue: Queue,
+    @InjectQueue(REACTION_QUEUE_NAME) private reactionQueue: Queue,
+    @InjectQueue(UPDATE_QUEUE_NAME) private updateQueue: Queue,
+    @InjectQueue(PROFILE_QUEUE_NAME) private profileQueue: Queue,
+    @InjectQueue(TOMBSTONE_QUEUE_NAME) private tombstoneQueue: Queue,
     private ipfsService: IpfsService,
   ) {
     this.logger = new Logger(this.constructor.name);

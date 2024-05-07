@@ -4,11 +4,11 @@ https://docs.nestjs.com/modules
 
 import { BullModule } from '@nestjs/bullmq';
 import { Module } from '@nestjs/common';
-import { RedisModule } from '@liaoliaots/nestjs-redis';
+import { RedisModule } from '@songkeys/nestjs-redis';
 import { ScheduleModule } from '@nestjs/schedule';
 import { ConfigModule } from '../../../../libs/common/src/config/config.module';
 import { ConfigService } from '../../../../libs/common/src/config/config.service';
-import { QueueConstants } from '../../../../libs/common/src';
+import { BATCH_QUEUE_NAME, BROADCAST_QUEUE_NAME, PROFILE_QUEUE_NAME, REACTION_QUEUE_NAME, REPLY_QUEUE_NAME, TOMBSTONE_QUEUE_NAME, UPDATE_QUEUE_NAME } from '../../../../libs/common/src';
 import { BatchingProcessorService } from './batching.processor.service';
 import { BroadcastWorker } from './workers/broadcast.worker';
 import { ReplyWorker } from './workers/reply.worker';
@@ -55,25 +55,25 @@ import { ProfileWorker } from './workers/profile.worker';
     }),
     ScheduleModule.forRoot(),
     BullModule.registerQueue({
-      name: QueueConstants.BATCH_QUEUE_NAME,
+      name: BATCH_QUEUE_NAME,
     }),
     BullModule.registerQueue({
-      name: QueueConstants.BROADCAST_QUEUE_NAME,
+      name: BROADCAST_QUEUE_NAME,
     }),
     BullModule.registerQueue({
-      name: QueueConstants.REPLY_QUEUE_NAME,
+      name: REPLY_QUEUE_NAME,
     }),
     BullModule.registerQueue({
-      name: QueueConstants.REACTION_QUEUE_NAME,
+      name: REACTION_QUEUE_NAME,
     }),
     BullModule.registerQueue({
-      name: QueueConstants.TOMBSTONE_QUEUE_NAME,
+      name: TOMBSTONE_QUEUE_NAME,
     }),
     BullModule.registerQueue({
-      name: QueueConstants.UPDATE_QUEUE_NAME,
+      name: UPDATE_QUEUE_NAME,
     }),
     BullModule.registerQueue({
-      name: QueueConstants.PROFILE_QUEUE_NAME,
+      name: PROFILE_QUEUE_NAME,
     }),
   ],
   providers: [BatchingProcessorService, BroadcastWorker, ReplyWorker, ReactionWorker, TombstoneWorker, UpdateWorker, ProfileWorker],

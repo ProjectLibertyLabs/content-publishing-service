@@ -2,14 +2,14 @@ import { Module } from '@nestjs/common';
 import { EventEmitterModule } from '@nestjs/event-emitter';
 import { BullModule } from '@nestjs/bullmq';
 import { ScheduleModule } from '@nestjs/schedule';
-import { RedisModule } from '@liaoliaots/nestjs-redis';
+import { RedisModule } from '@songkeys/nestjs-redis';
 import { BullBoardModule } from '@bull-board/nestjs';
 import { BullMQAdapter } from '@bull-board/api/bullMQAdapter';
 import { ExpressAdapter } from '@bull-board/express';
 import { MulterModule } from '@nestjs/platform-express';
 import { ApiController } from './api.controller';
 import { DevelopmentController } from './development.controller';
-import { QueueConstants } from '../../../libs/common/src';
+import { ASSET_QUEUE_NAME, BATCH_QUEUE_NAME, BROADCAST_QUEUE_NAME, PROFILE_QUEUE_NAME, PUBLISH_QUEUE_NAME, REACTION_QUEUE_NAME, REPLY_QUEUE_NAME, REQUEST_QUEUE_NAME, STATUS_QUEUE_NAME, TOMBSTONE_QUEUE_NAME, TRANSACTION_RECEIPT_QUEUE_NAME, UPDATE_QUEUE_NAME } from '../../../libs/common/src';
 import { ApiService } from './api.service';
 import { IpfsService } from '../../../libs/common/src/utils/ipfs.client';
 import { ConfigModule } from '../../../libs/common/src/config/config.module';
@@ -53,40 +53,40 @@ import { ConfigService } from '../../../libs/common/src/config/config.service';
     }),
     BullModule.registerQueue(
       {
-        name: QueueConstants.ASSET_QUEUE_NAME,
+        name: ASSET_QUEUE_NAME,
       },
       {
-        name: QueueConstants.REQUEST_QUEUE_NAME,
+        name: REQUEST_QUEUE_NAME,
       },
       {
-        name: QueueConstants.BROADCAST_QUEUE_NAME,
+        name: BROADCAST_QUEUE_NAME,
       },
       {
-        name: QueueConstants.REPLY_QUEUE_NAME,
+        name: REPLY_QUEUE_NAME,
       },
       {
-        name: QueueConstants.REACTION_QUEUE_NAME,
+        name: REACTION_QUEUE_NAME,
       },
       {
-        name: QueueConstants.TOMBSTONE_QUEUE_NAME,
+        name: TOMBSTONE_QUEUE_NAME,
       },
       {
-        name: QueueConstants.UPDATE_QUEUE_NAME,
+        name: UPDATE_QUEUE_NAME,
       },
       {
-        name: QueueConstants.PROFILE_QUEUE_NAME,
+        name: PROFILE_QUEUE_NAME,
       },
       {
-        name: QueueConstants.BATCH_QUEUE_NAME,
+        name: BATCH_QUEUE_NAME,
       },
       {
-        name: QueueConstants.PUBLISH_QUEUE_NAME,
+        name: PUBLISH_QUEUE_NAME,
       },
       {
-        name: QueueConstants.TRANSACTION_RECEIPT_QUEUE_NAME,
+        name: TRANSACTION_RECEIPT_QUEUE_NAME,
       },
       {
-        name: QueueConstants.STATUS_QUEUE_NAME,
+        name: STATUS_QUEUE_NAME,
       },
     ),
 
@@ -96,51 +96,51 @@ import { ConfigService } from '../../../libs/common/src/config/config.service';
       adapter: ExpressAdapter,
     }),
     BullBoardModule.forFeature({
-      name: QueueConstants.ASSET_QUEUE_NAME,
+      name: ASSET_QUEUE_NAME,
       adapter: BullMQAdapter,
     }),
     BullBoardModule.forFeature({
-      name: QueueConstants.REQUEST_QUEUE_NAME,
+      name: REQUEST_QUEUE_NAME,
       adapter: BullMQAdapter,
     }),
     BullBoardModule.forFeature({
-      name: QueueConstants.BROADCAST_QUEUE_NAME,
+      name: BROADCAST_QUEUE_NAME,
       adapter: BullMQAdapter,
     }),
     BullBoardModule.forFeature({
-      name: QueueConstants.REPLY_QUEUE_NAME,
+      name: REPLY_QUEUE_NAME,
       adapter: BullMQAdapter,
     }),
     BullBoardModule.forFeature({
-      name: QueueConstants.REACTION_QUEUE_NAME,
+      name: REACTION_QUEUE_NAME,
       adapter: BullMQAdapter,
     }),
     BullBoardModule.forFeature({
-      name: QueueConstants.TOMBSTONE_QUEUE_NAME,
+      name: TOMBSTONE_QUEUE_NAME,
       adapter: BullMQAdapter,
     }),
     BullBoardModule.forFeature({
-      name: QueueConstants.UPDATE_QUEUE_NAME,
+      name: UPDATE_QUEUE_NAME,
       adapter: BullMQAdapter,
     }),
     BullBoardModule.forFeature({
-      name: QueueConstants.PROFILE_QUEUE_NAME,
+      name: PROFILE_QUEUE_NAME,
       adapter: BullMQAdapter,
     }),
     BullBoardModule.forFeature({
-      name: QueueConstants.BATCH_QUEUE_NAME,
+      name: BATCH_QUEUE_NAME,
       adapter: BullMQAdapter,
     }),
     BullBoardModule.forFeature({
-      name: QueueConstants.PUBLISH_QUEUE_NAME,
+      name: PUBLISH_QUEUE_NAME,
       adapter: BullMQAdapter,
     }),
     BullBoardModule.forFeature({
-      name: QueueConstants.TRANSACTION_RECEIPT_QUEUE_NAME,
+      name: TRANSACTION_RECEIPT_QUEUE_NAME,
       adapter: BullMQAdapter,
     }),
     BullBoardModule.forFeature({
-      name: QueueConstants.STATUS_QUEUE_NAME,
+      name: STATUS_QUEUE_NAME,
       adapter: BullMQAdapter,
     }),
     EventEmitterModule.forRoot({
