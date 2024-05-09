@@ -7,7 +7,7 @@ import { Controller, Get, Logger, NotFoundException, Param, Post } from '@nestjs
 import { InjectQueue } from '@nestjs/bullmq';
 import { Queue } from 'bullmq';
 import { Job } from 'bullmq/dist/esm/classes/job';
-import { AnnouncementTypeDto, BROADCAST_QUEUE_NAME, PROFILE_QUEUE_NAME, REACTION_QUEUE_NAME, REPLY_QUEUE_NAME, REQUEST_QUEUE_NAME, TOMBSTONE_QUEUE_NAME, UPDATE_QUEUE_NAME } from '../../../libs/common/src';
+import * as QueueConstants from '../../../libs/common/src';
 import { IpfsService } from '../../../libs/common/src/utils/ipfs.client';
 import { AnnouncementType, createBroadcast, createProfile, createReaction, createReply, createTombstone, createUpdate } from '../../../libs/common/src/interfaces/dsnp';
 import { calculateDsnpHash } from '../../../libs/common/src/utils/ipfs';
@@ -16,26 +16,26 @@ import { calculateDsnpHash } from '../../../libs/common/src/utils/ipfs';
 export class DevelopmentController {
   private readonly logger: Logger;
 
-  private readonly queueMapper: Map<AnnouncementTypeDto, Queue>;
+  private readonly queueMapper: Map<QueueConstants.AnnouncementTypeDto, Queue>;
 
   constructor(
-    @InjectQueue(REQUEST_QUEUE_NAME) private requestQueue: Queue,
-    @InjectQueue(BROADCAST_QUEUE_NAME) private broadcastQueue: Queue,
-    @InjectQueue(REPLY_QUEUE_NAME) private replyQueue: Queue,
-    @InjectQueue(REACTION_QUEUE_NAME) private reactionQueue: Queue,
-    @InjectQueue(UPDATE_QUEUE_NAME) private updateQueue: Queue,
-    @InjectQueue(PROFILE_QUEUE_NAME) private profileQueue: Queue,
-    @InjectQueue(TOMBSTONE_QUEUE_NAME) private tombstoneQueue: Queue,
+    @InjectQueue(QueueConstants.REQUEST_QUEUE_NAME) private requestQueue: Queue,
+    @InjectQueue(QueueConstants.BROADCAST_QUEUE_NAME) private broadcastQueue: Queue,
+    @InjectQueue(QueueConstants.REPLY_QUEUE_NAME) private replyQueue: Queue,
+    @InjectQueue(QueueConstants.REACTION_QUEUE_NAME) private reactionQueue: Queue,
+    @InjectQueue(QueueConstants.UPDATE_QUEUE_NAME) private updateQueue: Queue,
+    @InjectQueue(QueueConstants.PROFILE_QUEUE_NAME) private profileQueue: Queue,
+    @InjectQueue(QueueConstants.TOMBSTONE_QUEUE_NAME) private tombstoneQueue: Queue,
     private ipfsService: IpfsService,
   ) {
     this.logger = new Logger(this.constructor.name);
     this.queueMapper = new Map([
-      [AnnouncementTypeDto.BROADCAST, broadcastQueue],
-      [AnnouncementTypeDto.REPLY, replyQueue],
-      [AnnouncementTypeDto.REACTION, reactionQueue],
-      [AnnouncementTypeDto.UPDATE, updateQueue],
-      [AnnouncementTypeDto.PROFILE, profileQueue],
-      [AnnouncementTypeDto.TOMBSTONE, tombstoneQueue],
+      [QueueConstants.AnnouncementTypeDto.BROADCAST, broadcastQueue],
+      [QueueConstants.AnnouncementTypeDto.REPLY, replyQueue],
+      [QueueConstants.AnnouncementTypeDto.REACTION, reactionQueue],
+      [QueueConstants.AnnouncementTypeDto.UPDATE, updateQueue],
+      [QueueConstants.AnnouncementTypeDto.PROFILE, profileQueue],
+      [QueueConstants.AnnouncementTypeDto.TOMBSTONE, tombstoneQueue],
     ]);
   }
 
@@ -57,7 +57,7 @@ export class DevelopmentController {
   }
 
   @Post('/dummy/announcement/:queueType/:count')
-  async populate(@Param('queueType') queueType: AnnouncementTypeDto, @Param('count') count: number) {
+  async populate(@Param('queueType') queueType: QueueConstants.AnnouncementTypeDto, @Param('count') count: number) {
     const promises: Promise<Job>[] = [];
     // eslint-disable-next-line no-plusplus
     for (let i = 0; i < count; i++) {
@@ -66,16 +66,16 @@ export class DevelopmentController {
       const fromId = `${Math.floor(Math.random() * 100000000)}`;
       const hash = `${Math.floor(Math.random() * 100000000)}`;
       switch (queueType) {
-        case AnnouncementTypeDto.BROADCAST:
+        case QueueConstants.AnnouncementTypeDto.BROADCAST:
           data = createBroadcast(fromId, `https://example.com/${Math.floor(Math.random() * 100000000)}`, hash);
           break;
-        case AnnouncementTypeDto.PROFILE:
+        case QueueConstants.AnnouncementTypeDto.PROFILE:
           data = createProfile(fromId, `https://example.com/${Math.floor(Math.random() * 100000000)}`, hash);
           break;
-        case AnnouncementTypeDto.UPDATE:
+        case QueueConstants.AnnouncementTypeDto.UPDATE:
           data = createUpdate(fromId, `https://example.com/${Math.floor(Math.random() * 100000000)}`, hash, AnnouncementType.Broadcast, `${Math.floor(Math.random() * 100000000)}`);
           break;
-        case AnnouncementTypeDto.REPLY:
+        case QueueConstants.AnnouncementTypeDto.REPLY:
           data = createReply(
             fromId,
             `https://example.com/${Math.floor(Math.random() * 100000000)}`,
@@ -83,10 +83,10 @@ export class DevelopmentController {
             `dsnp://0x${Math.floor(Math.random() * 100000000)}/0x${Math.floor(Math.random() * 100000000)}`,
           );
           break;
-        case AnnouncementTypeDto.REACTION:
+        case QueueConstants.AnnouncementTypeDto.REACTION:
           data = createReaction(fromId, '🤌🏼', `dsnp://0x${Math.floor(Math.random() * 100000000)}/0x${Math.floor(Math.random() * 100000000)}`, 1);
           break;
-        case AnnouncementTypeDto.TOMBSTONE:
+        case QueueConstants.AnnouncementTypeDto.TOMBSTONE:
           data = createTombstone(fromId, AnnouncementType.Reply, hash);
           break;
         default:
