@@ -9,7 +9,7 @@ import { ExpressAdapter } from '@bull-board/express';
 import { MulterModule } from '@nestjs/platform-express';
 import { ApiController } from './api.controller';
 import { DevelopmentController } from './development.controller';
-import { ASSET_QUEUE_NAME, BATCH_QUEUE_NAME, BROADCAST_QUEUE_NAME, PROFILE_QUEUE_NAME, PUBLISH_QUEUE_NAME, REACTION_QUEUE_NAME, REPLY_QUEUE_NAME, REQUEST_QUEUE_NAME, STATUS_QUEUE_NAME, TOMBSTONE_QUEUE_NAME, TRANSACTION_RECEIPT_QUEUE_NAME, UPDATE_QUEUE_NAME } from '../../../libs/common/src';
+import * as QueueConstants from '../../../libs/common/src';
 import { ApiService } from './api.service';
 import { IpfsService } from '../../../libs/common/src/utils/ipfs.client';
 import { ConfigModule } from '../../../libs/common/src/config/config.module';
