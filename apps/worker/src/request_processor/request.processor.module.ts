@@ -7,7 +7,7 @@ import { Module } from '@nestjs/common';
 import { RedisModule } from '@songkeys/nestjs-redis';
 import { ConfigModule } from '../../../../libs/common/src/config/config.module';
 import { ConfigService } from '../../../../libs/common/src/config/config.service';
-import { ASSET_QUEUE_NAME, BROADCAST_QUEUE_NAME, PROFILE_QUEUE_NAME, REACTION_QUEUE_NAME, REPLY_QUEUE_NAME, REQUEST_QUEUE_NAME, TOMBSTONE_QUEUE_NAME, UPDATE_QUEUE_NAME } from '../../../../libs/common/src';
+import * as QueueConstants from '../../../../libs/common/src';
 import { RequestProcessorService } from './request.processor.service';
 import { IpfsService } from '../../../../libs/common/src/utils/ipfs.client';
 import { DsnpAnnouncementProcessor } from './dsnp.announcement.processor';
@@ -49,28 +49,28 @@ import { DsnpAnnouncementProcessor } from './dsnp.announcement.processor';
       inject: [ConfigService],
     }),
     BullModule.registerQueue({
-      name: ASSET_QUEUE_NAME,
+      name: QueueConstants.ASSET_QUEUE_NAME,
     }),
     BullModule.registerQueue({
-      name: REQUEST_QUEUE_NAME,
+      name: QueueConstants.REQUEST_QUEUE_NAME,
     }),
     BullModule.registerQueue({
-      name: BROADCAST_QUEUE_NAME,
+      name: QueueConstants.BROADCAST_QUEUE_NAME,
     }),
     BullModule.registerQueue({
-      name: REPLY_QUEUE_NAME,
+      name: QueueConstants.REPLY_QUEUE_NAME,
     }),
     BullModule.registerQueue({
-      name: REACTION_QUEUE_NAME,
+      name: QueueConstants.REACTION_QUEUE_NAME,
     }),
     BullModule.registerQueue({
-      name: TOMBSTONE_QUEUE_NAME,
+      name: QueueConstants.TOMBSTONE_QUEUE_NAME,
     }),
     BullModule.registerQueue({
-      name: UPDATE_QUEUE_NAME,
+      name: QueueConstants.UPDATE_QUEUE_NAME,
     }),
     BullModule.registerQueue({
-      name: PROFILE_QUEUE_NAME,
+      name: QueueConstants.PROFILE_QUEUE_NAME,
     }),
   ],
   providers: [RequestProcessorService, IpfsService, DsnpAnnouncementProcessor],
