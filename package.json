@@ -50,7 +50,7 @@
     "@dsnp/frequency-schemas": "^1.1.0",
     "@dsnp/parquetjs": "^1.6.2",
     "@frequency-chain/api-augment": "1.11.1",
-    "@multiformats/blake2": "^1.0.13",
+    "@multiformats/blake2": "^2.0.2",
     "@nestjs/bullmq": "^10.1.1",
     "@nestjs/cli": "^10.3.2",
     "@nestjs/common": "^10.3.8",
