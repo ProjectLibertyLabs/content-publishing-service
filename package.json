@@ -42,7 +42,7 @@
   },
   "homepage": "https://github.com/AmplicaLabs/content-publishing-service#readme",
   "dependencies": {
-    "@bull-board/api": "^5.17.1",
+    "@bull-board/api": "^5.20.2",
     "@bull-board/express": "^5.17.1",
     "@bull-board/nestjs": "^5.17.1",
     "@bull-board/ui": "^5.17.1",
