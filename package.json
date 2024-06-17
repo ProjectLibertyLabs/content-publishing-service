@@ -48,7 +48,7 @@
     "@bull-board/ui": "^5.17.1",
     "@dsnp/activity-content": "^1.1.0",
     "@dsnp/frequency-schemas": "^1.1.0",
-    "@dsnp/parquetjs": "^1.6.2",
+    "@dsnp/parquetjs": "^1.7.0",
     "@frequency-chain/api-augment": "1.11.1",
     "@multiformats/blake2": "^1.0.13",
     "@nestjs/bullmq": "^10.1.1",
