@@ -46,7 +46,6 @@ export default function() {
         // Request No. 1: ApiController_update with no assets
         {
             let url = BASE_URL + `/api/content/${userDsnpId}`;
-            // TODO: edit the parameters of the request body.
             const body = {
                 targetContentHash: '0x7653423447AF',
                 targetAnnouncementType: 'broadcast',
@@ -193,7 +192,6 @@ export default function() {
         // Request No. 1: ApiController_reply no assets
         {
             let url = BASE_URL + `/api/content/${userDsnpId}/reply`;
-            // TODO: edit the parameters of the request body.
             let body = validReplyNoUploadedAssets;
             let params = {headers: {"Content-Type": "application/json", "Accept": "application/json"}};
             let request = http.post(url, JSON.stringify(body), params);

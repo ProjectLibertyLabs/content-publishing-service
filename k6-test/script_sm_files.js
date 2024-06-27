@@ -22,8 +22,7 @@ export const options = {
 export default function() {
     group("/api/asset/upload medium files", () => {
         let url = BASE_URL + `/api/asset/upload`;
-        // Request No. 1: ApiController_assetUpload medium files
-        // Currently expected to fail
+        // Request No. 1: ApiController_assetUpload small files
         {
             const data = mockAsset('sm');
             // Send the PUT request
