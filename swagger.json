@@ -4,6 +4,7 @@
     "/v1/asset/upload": {
       "put": {
         "operationId": "AssetController_assetUpload",
+        "summary": "Upload Asset Files",
         "parameters": [],
         "requestBody": {
           "required": true,
@@ -284,6 +285,7 @@
     "/v1/profile/{userDsnpId}": {
       "put": {
         "operationId": "ProfileController_profile",
+        "summary": "Update a user's Profile",
         "parameters": [
           {
             "name": "userDsnpId",

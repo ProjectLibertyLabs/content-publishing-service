@@ -1,5 +1,5 @@
 import { Body, Controller, HttpCode, Logger, Param, Put } from '@nestjs/common';
-import { ApiTags } from '@nestjs/swagger';
+import {ApiOperation, ApiTags} from '@nestjs/swagger';
 import { ApiService } from './api.service';
 import { AnnouncementResponseDto, AnnouncementTypeDto, AssetIncludedRequestDto, DsnpUserIdParam, ProfileDto } from '../../../libs/common/src';
 
@@ -13,6 +13,7 @@ export class ProfileController {
   }
 
   @Put(':userDsnpId')
+  @ApiOperation({ summary: "Update a user's Profile" })
   @HttpCode(202)
   async profile(@Param() userDsnpId: DsnpUserIdParam, @Body() profileDto: ProfileDto): Promise<AnnouncementResponseDto> {
     const metadata = await this.apiService.validateAssetsAndFetchMetadata(profileDto as AssetIncludedRequestDto);
