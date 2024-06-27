@@ -1,5 +1,5 @@
 import { Body, Controller, HttpCode, Logger, Param, Put } from '@nestjs/common';
-import {ApiOperation, ApiTags} from '@nestjs/swagger';
+import { ApiOperation, ApiTags } from '@nestjs/swagger';
 import { ApiService } from './api.service';
 import { AnnouncementResponseDto, AnnouncementTypeDto, AssetIncludedRequestDto, DsnpUserIdParam, ProfileDto } from '../../../libs/common/src';
 

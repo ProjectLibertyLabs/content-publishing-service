@@ -19,7 +19,7 @@ import {
     validProfileNoUploadedAssets,
     validReaction,
     validReplyNoUploadedAssets
-} from "../apps/v1/test/mockRequestData.ts";
+} from "../apps/api/test/mockRequestData.ts";
 
 import {
     getReferenceId,
@@ -92,10 +92,10 @@ export default function() {
         }
     });
 
-    group("/v1/health", () => {
+    group("/healthz", () => {
         // Request No. 1: ApiController_health
         {
-            let url = BASE_URL + `/v1/health`;
+            let url = BASE_URL + `/healthz`;
             let request = http.get(url);
 
             check(request, {

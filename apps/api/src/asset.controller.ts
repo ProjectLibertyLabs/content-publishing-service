@@ -1,6 +1,6 @@
 import { Controller, HttpCode, HttpStatus, Logger, ParseFilePipeBuilder, Put, UploadedFiles, UseInterceptors } from '@nestjs/common';
 import { FilesInterceptor } from '@nestjs/platform-express';
-import {ApiBody, ApiConsumes, ApiOperation, ApiTags} from '@nestjs/swagger';
+import { ApiBody, ApiConsumes, ApiOperation, ApiTags } from '@nestjs/swagger';
 import { ApiService } from './api.service';
 import { DSNP_VALID_MIME_TYPES, FilesUploadDto, UploadResponseDto } from '../../../libs/common/src';
 
