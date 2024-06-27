@@ -12,7 +12,7 @@ import { IpfsService } from '../../../libs/common/src/utils/ipfs.client';
 import { AnnouncementType, createBroadcast, createProfile, createReaction, createReply, createTombstone, createUpdate } from '../../../libs/common/src/interfaces/dsnp';
 import { calculateDsnpHash } from '../../../libs/common/src/utils/ipfs';
 
-@Controller('api/dev')
+@Controller('dev')
 export class DevelopmentController {
   private readonly logger: Logger;
 
