@@ -21,9 +21,9 @@ export const DSNP_CONTENT_HASH_REGEX = /^0x[0-9a-f]+$/i;
 export const DSNP_USER_URI_REGEX = /^dsnp:\/\/[1-9][0-9]{0,19}$/i;
 /**
  * DSNP content URI based on DSNP Spec
- * example: dsnp://78187493520/0x1234567890abcdef0123456789abcdef0123456789abcdef0123456789abcdef
+ * example: dsnp://781/TWFuIGlzIGRpc3Rpb==
  */
-export const DSNP_CONTENT_URI_REGEX = /^dsnp:\/\/(?:[1-9]|[0-9]{2,19})\/(?:[A-Za-z0-9+]{4})*(?:[A-Za-z0-9+]{2}==|[A-Za-z0-9+]{3}=)?$/i;
+export const DSNP_CONTENT_URI_REGEX = /^dsnp:\/\/(?:[1-9]|[0-9]{2,19})\/(?:[-A-Za-z0-9+/]+={0,3})$/i;
 /**
  * DSNP character ranges for valid emojis
  */
