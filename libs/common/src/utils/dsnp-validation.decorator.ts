@@ -32,21 +32,21 @@ function validateContentHash(contentHash: string): boolean {
   // validating them properly here.
   return true;
 
-  try {
-    const hexMatch = hexRe.exec(contentHash);
-    if (hexMatch && hexMatch?.groups) {
-      const { hexString } = hexMatch.groups;
-      const decoded = base16.decode(hexString.toLowerCase());
-      CID.decode(decoded);
-    } else {
-      CID.parse(contentHash);
-    }
-  } catch (err: any) {
-    console.error(`Invalid multiformat content hash: ${err.message}`);
-    return false;
-  }
+  // try {
+  //   const hexMatch = hexRe.exec(contentHash);
+  //   if (hexMatch && hexMatch?.groups) {
+  //     const { hexString } = hexMatch.groups;
+  //     const decoded = base16.decode(hexString.toLowerCase());
+  //     CID.decode(decoded);
+  //   } else {
+  //     CID.parse(contentHash);
+  //   }
+  // } catch (err: any) {
+  //   console.error(`Invalid multiformat content hash: ${err.message}`);
+  //   return false;
+  // }
 
-  return true;
+  // return true;
 }
 
 export function IsDsnpUserURI(validationOptions?: ValidationOptions) {
