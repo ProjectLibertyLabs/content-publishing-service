@@ -1,3 +1,17 @@
+# Repository Archived and Moved
+
+**This repository has been archived and its contents have been moved to a new location.**
+
+You can now find the `content-publishing-service` repository within the [AmplicaLabs/gateway](https://github.com/AmplicaLabs/gateway.git) repository at the following path:
+
+`./services/content-publishing`
+
+For any future updates or contributions, please refer to the new location. Thank you!
+
+---
+
+**Link to the new repository: [AmplicaLabs/gateway](https://github.com/AmplicaLabs/gateway.git)**
+
 # Content Publisher
 
 <!-- TABLE OF CONTENTS -->
